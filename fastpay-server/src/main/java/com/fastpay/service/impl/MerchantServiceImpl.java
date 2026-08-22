@@ -1,6 +1,5 @@
 package com.fastpay.service.impl;
 
-import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,6 +17,7 @@ import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.MerchantService;
 import com.fastpay.util.JwtUtil;
+import com.fastpay.util.PasswordUtil;
 import com.fastpay.util.SignUtil;
 import com.fastpay.vo.DashboardVO;
 import com.fastpay.vo.LoginVO;
@@ -61,9 +61,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             throw new BusinessException("用户名或密码错误");
         }
 
-        // 验证密码
-        String encryptedPassword = SecureUtil.md5(dto.getPassword());
-        if (!encryptedPassword.equals(merchant.getPassword())) {
+        // 验证密码，兼容历史 MD5 哈希
+        if (!PasswordUtil.matches(dto.getPassword(), merchant.getPassword())) {
             throw new BusinessException("用户名或密码错误");
         }
 
@@ -73,6 +72,11 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         }
         if (Constants.Status.PENDING.equals(merchant.getStatus())) {
             throw new BusinessException("账号待审核，请联系管理员");
+        }
+
+        // 历史 MD5 密码登录成功后自动升级为 BCrypt
+        if (PasswordUtil.needsRehash(merchant.getPassword())) {
+            merchant.setPassword(PasswordUtil.encode(dto.getPassword()));
         }
 
         // 更新登录信息
@@ -111,7 +115,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         merchant.setMerchantNo(SignUtil.generateMerchantNo());
         merchant.setMerchantName(dto.getMerchantName());
         merchant.setUsername(dto.getUsername());
-        merchant.setPassword(SecureUtil.md5(dto.getPassword()));
+        merchant.setPassword(PasswordUtil.encode(dto.getPassword()));
         merchant.setContactName(dto.getContactName());
         merchant.setContactPhone(dto.getContactPhone());
         merchant.setContactEmail(dto.getContactEmail());
@@ -153,7 +157,7 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             merchant.setMerchantName(dto.getMerchantName());
         }
         if (StringUtils.hasText(dto.getPassword())) {
-            merchant.setPassword(SecureUtil.md5(dto.getPassword()));
+            merchant.setPassword(PasswordUtil.encode(dto.getPassword()));
         }
         if (StringUtils.hasText(dto.getContactName())) {
             merchant.setContactName(dto.getContactName());
@@ -274,9 +278,5 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         merchant.setNotifyUrl(notifyUrl);
         merchant.setReturnUrl(returnUrl);
         this.updateById(merchant);
-    }
-
-    public static void main(String[] args) {
-        System.out.println(SecureUtil.md5("nanyiba@fastpayQaz330600"));
     }
 }

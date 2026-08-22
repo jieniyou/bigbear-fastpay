@@ -6,8 +6,8 @@ import com.fastpay.common.Result;
 import com.fastpay.dto.MerchantDTO;
 import com.fastpay.entity.Merchant;
 import com.fastpay.service.MerchantService;
+import com.fastpay.util.MerchantSecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +48,7 @@ public class AdminMerchantController {
             @RequestParam(required = false) String merchantName,
             @RequestParam(required = false) Integer status) {
         Page<Merchant> page = merchantService.pageMerchants(new Page<>(current, size), merchantName, status);
+        MerchantSecurityUtil.hideCredentials(page.getRecords());
         PageResult<Merchant> result = new PageResult<>(page.getRecords(), page.getTotal(), page.getSize(), page.getCurrent());
         return Result.success(result);
     }
@@ -61,6 +62,7 @@ public class AdminMerchantController {
     @GetMapping("/list")
     public Result<List<Merchant>> list() {
         List<Merchant> list = merchantService.listAllMerchants();
+        MerchantSecurityUtil.hideCredentials(list);
         return Result.success(list);
     }
 
@@ -74,7 +76,7 @@ public class AdminMerchantController {
     @GetMapping("/{id}")
     public Result<Merchant> getById(@PathVariable Long id) {
         Merchant merchant = merchantService.getById(id);
-        return Result.success(merchant);
+        return Result.success(MerchantSecurityUtil.hidePassword(merchant));
     }
 
     /**
@@ -87,7 +89,7 @@ public class AdminMerchantController {
     @PostMapping
     public Result<Merchant> create(@Valid @RequestBody MerchantDTO dto) {
         Merchant merchant = merchantService.createMerchant(dto);
-        return Result.success("创建成功", merchant);
+        return Result.success("创建成功", MerchantSecurityUtil.hidePassword(merchant));
     }
 
     /**
@@ -129,6 +131,6 @@ public class AdminMerchantController {
     @PostMapping("/{id}/reset-key")
     public Result<Merchant> resetApiKey(@PathVariable Long id) {
         Merchant merchant = merchantService.resetApiKey(id);
-        return Result.success("重置成功", merchant);
+        return Result.success("重置成功", MerchantSecurityUtil.hidePassword(merchant));
     }
 }

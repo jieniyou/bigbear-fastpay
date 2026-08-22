@@ -11,6 +11,7 @@ import com.fastpay.mapper.MerchantMapper;
 import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.PayOrderService;
+import com.fastpay.util.PublicUrlUtil;
 import com.fastpay.vo.PayResultVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -51,7 +52,7 @@ public class PayController {
     private final PayQrcodeMapper payQrcodeMapper;
     private final ShopMapper shopMapper;
 
-    @Value("${fastpay.pay.page-domain}")
+    @Value("${fastpay.pay.page-domain:}")
     private String pageDomain;
 
     public PayController(PayOrderService payOrderService, MerchantMapper merchantMapper,
@@ -84,7 +85,7 @@ public class PayController {
      */
     @Operation(summary = "页面跳转支付", description = "创建订单并跳转到支付页面")
     @PostMapping(value = "/submit")
-    public void submitPay(@Valid CreateOrderDTO dto, HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) throws IOException {
+    public void submitPay(@Valid CreateOrderDTO dto, HttpServletRequest request, HttpServletResponse response) throws IOException {
         log.info("页面跳转支付请求: merchantNo={}, outTradeNo={}, amount={}, payType={}", 
                 dto.getMerchantNo(), dto.getOutTradeNo(), dto.getAmount(), dto.getPayType());
         
@@ -101,14 +102,15 @@ public class PayController {
                 payOrderService.updateReturnUrl(vo.getOrderNo(), returnUrl);
             }
             
-            log.info("页面跳转支付订单创建成功: orderNo={}, payPageUrl={}", vo.getOrderNo(), vo.getPayPageUrl());
+            String payPageUrl = resolvePayPageDomain(request) + "/pay/" + vo.getOrderNo();
+            log.info("页面跳转支付订单创建成功: orderNo={}, payPageUrl={}", vo.getOrderNo(), payPageUrl);
 
             // 重定向到支付页面
-            response.sendRedirect(vo.getPayPageUrl());
+            response.sendRedirect(payPageUrl);
         } catch (Exception e) {
             log.error("页面跳转支付失败: merchantNo={}, outTradeNo={}", dto.getMerchantNo(), dto.getOutTradeNo(), e);
             // 跳转到错误页面
-            response.sendRedirect(pageDomain + "/pay/error?message=" + URLEncoder.encode(e.getMessage(), "UTF-8"));
+            response.sendRedirect(resolvePayPageDomain(request) + "/pay/error?message=" + URLEncoder.encode(e.getMessage(), "UTF-8"));
         }
     }
 
@@ -240,5 +242,18 @@ public class PayController {
             ip = request.getRemoteAddr();
         }
         return ip;
+    }
+
+    /**
+     * 解析支付页访问地址，未配置固定地址时按当前请求自动推导。
+     *
+     * @param request 当前请求
+     * @return 支付页基础地址
+     */
+    private String resolvePayPageDomain(HttpServletRequest request) {
+        if (StringUtils.hasText(pageDomain)) {
+            return pageDomain;
+        }
+        return PublicUrlUtil.getPublicOrigin(request) + "/fastpay-merchant";
     }
 }

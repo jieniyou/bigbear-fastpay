@@ -1,6 +1,5 @@
 package com.fastpay.service.impl;
 
-import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fastpay.common.BusinessException;
@@ -11,11 +10,13 @@ import com.fastpay.entity.PayOrder;
 import com.fastpay.mapper.*;
 import com.fastpay.service.AdminService;
 import com.fastpay.util.JwtUtil;
+import com.fastpay.util.PasswordUtil;
 import com.fastpay.vo.DashboardVO;
 import com.fastpay.vo.LoginVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,10 +36,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     private final PayQrcodeMapper payQrcodeMapper;
     private final PayOrderMapper payOrderMapper;
 
-    @Value("${fastpay.admin.username}")
+    @Value("${fastpay.admin.init-enabled:false}")
+    private Boolean adminInitEnabled;
+
+    @Value("${fastpay.admin.username:}")
     private String defaultUsername;
 
-    @Value("${fastpay.admin.password}")
+    @Value("${fastpay.admin.password:}")
     private String defaultPassword;
 
     public AdminServiceImpl(JwtUtil jwtUtil, MerchantMapper merchantMapper, 
@@ -61,15 +65,19 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             throw new BusinessException("用户名或密码错误");
         }
 
-        // 验证密码
-        String encryptedPassword = SecureUtil.md5(dto.getPassword());
-        if (!encryptedPassword.equals(admin.getPassword())) {
+        // 验证密码，兼容历史 MD5 哈希
+        if (!PasswordUtil.matches(dto.getPassword(), admin.getPassword())) {
             throw new BusinessException("用户名或密码错误");
         }
 
         // 检查状态
         if (!Constants.Status.ENABLED.equals(admin.getStatus())) {
             throw new BusinessException("账号已被禁用");
+        }
+
+        // 历史 MD5 密码登录成功后自动升级为 BCrypt
+        if (PasswordUtil.needsRehash(admin.getPassword())) {
+            admin.setPassword(PasswordUtil.encode(dto.getPassword()));
         }
 
         // 更新登录信息
@@ -154,10 +162,24 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             return;
         }
 
-        // 创建默认管理员
+        // 未显式开启初始化时，不创建任何固定后台入口
+        if (!Boolean.TRUE.equals(adminInitEnabled)) {
+            log.warn("管理员表为空，且未启用管理员初始化；请通过环境变量 FASTPAY_ADMIN_INIT_ENABLED=true 配置首次管理员");
+            return;
+        }
+
+        // 初始化管理员账号必须由环境变量或部署配置显式提供
+        if (!StringUtils.hasText(defaultUsername) || !StringUtils.hasText(defaultPassword)) {
+            throw new IllegalStateException("初始化管理员账号或密码为空");
+        }
+        if (PasswordUtil.isWeakInitialPassword(defaultPassword)) {
+            throw new IllegalStateException("初始化管理员密码过弱，请使用至少12位的强密码");
+        }
+
+        // 创建初始化管理员
         Admin admin = new Admin();
         admin.setUsername(defaultUsername);
-        admin.setPassword(SecureUtil.md5(defaultPassword));
+        admin.setPassword(PasswordUtil.encode(defaultPassword));
         admin.setNickname("超级管理员");
         admin.setAvatar("/static/avatar/admin.png");
         admin.setStatus(Constants.Status.ENABLED);

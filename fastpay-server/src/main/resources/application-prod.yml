@@ -1,8 +1,8 @@
 # Fast 易支付 - 服务端配置
 server:
-  port: 7001
+  port: ${FASTPAY_SERVER_INTERNAL_PORT:7001}
   servlet:
-    context-path: /fastpay-server
+    context-path: ${FASTPAY_SERVER_CONTEXT_PATH:/fastpay-server}
 
 
 spring:
@@ -12,9 +12,9 @@ spring:
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/bigbear_fastpay?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: QAZ330600
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://fast_pay_mysql:3306/bigbear_fastpay?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:fastpay}
+    password: ${SPRING_DATASOURCE_PASSWORD:change-me}
   
   # Jackson 配置
   jackson:
@@ -35,15 +35,17 @@ mybatis-plus:
       logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
 
 # Knife4j API 文档配置
 springdoc:
   swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:false}
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
   api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:false}
     path: /v3/api-docs
   group-configs:
     - group: 'default'
@@ -51,7 +53,7 @@ springdoc:
       packages-to-scan: com.fastpay.controller
 
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLED:false}
   setting:
     language: zh_cn
 
@@ -59,23 +61,31 @@ knife4j:
 fastpay:
   # JWT 配置
   jwt:
-    secret: FastPaySecretKey2024ForJwtTokenGeneration
+    secret: ${FASTPAY_JWT_SECRET:change-me-at-least-32-chars}
     # Token 有效期（小时）
-    expire-hours: 12
+    expire-hours: ${FASTPAY_JWT_EXPIRE_HOURS:12}
   
-  # 管理员默认账号
+  # 管理员初始化账号；生产必须显式开启并提供强密码
   admin:
-    username: fastpay
-    password: 123456@
+    init-enabled: ${FASTPAY_ADMIN_INIT_ENABLED:false}
+    username: ${FASTPAY_ADMIN_USERNAME:}
+    password: ${FASTPAY_ADMIN_PASSWORD:}
+
+  # CORS 允许来源，多个来源用英文逗号分隔
+  cors:
+    allowed-origins: ${FASTPAY_CORS_ALLOWED_ORIGINS:*}
+
+  # 是否公开 /api/info 接口，生产默认关闭
+  api-info-enabled: ${FASTPAY_API_INFO_ENABLED:false}
   
   # 支付配置
   pay:
     # 订单超时时间（分钟）
-    order-timeout-minutes: 3
-    # 支付页面域名（商户前端地址）
-    page-domain: http://121.4.28.146/fastpay-merchant
+    order-timeout-minutes: ${FASTPAY_ORDER_TIMEOUT_MINUTES:3}
+    # 支付页面域名；留空时按请求 Host 自动推导
+    page-domain: ${FASTPAY_PAY_PAGE_DOMAIN:}
   
   # 监听软件回调配置
   notify:
-    # 监听软件回调地址（完整URL，用于模版展示）
-    callback-url: http://121.4.28.146/fastpay-server/api/notify/callback
+    # 监听软件回调地址；留空时按请求 Host 自动推导
+    callback-url: ${FASTPAY_NOTIFY_CALLBACK_URL:}

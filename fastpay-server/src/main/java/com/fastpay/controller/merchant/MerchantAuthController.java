@@ -4,6 +4,8 @@ import com.fastpay.common.Result;
 import com.fastpay.dto.LoginDTO;
 import com.fastpay.entity.Merchant;
 import com.fastpay.service.MerchantService;
+import com.fastpay.util.MerchantSecurityUtil;
+import com.fastpay.util.PublicUrlUtil;
 import com.fastpay.vo.DashboardVO;
 import com.fastpay.vo.LoginVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -54,9 +57,7 @@ public class MerchantAuthController {
     public Result<Merchant> getInfo(HttpServletRequest request) {
         Long merchantId = (Long) request.getAttribute("userId");
         Merchant merchant = merchantService.getById(merchantId);
-        // 隐藏敏感信息
-        merchant.setPassword(null);
-        return Result.success(merchant);
+        return Result.success(MerchantSecurityUtil.hidePassword(merchant));
     }
 
     /**
@@ -93,7 +94,7 @@ public class MerchantAuthController {
     public Result<Merchant> resetApiKey(HttpServletRequest request) {
         Long merchantId = (Long) request.getAttribute("userId");
         Merchant merchant = merchantService.resetApiKey(merchantId);
-        return Result.success("重置成功", merchant);
+        return Result.success("重置成功", MerchantSecurityUtil.hidePassword(merchant));
     }
 
     /**
@@ -101,9 +102,12 @@ public class MerchantAuthController {
      */
     @Operation(summary = "监听回调配置", description = "获取监听软件回调地址等配置")
     @GetMapping("/notify/config")
-    public Result<Map<String, String>> getNotifyConfig() {
+    public Result<Map<String, String>> getNotifyConfig(HttpServletRequest request) {
         Map<String, String> config = new HashMap<>();
-        config.put("callbackUrl", notifyCallbackUrl);
+        String callbackUrl = StringUtils.hasText(notifyCallbackUrl)
+                ? notifyCallbackUrl
+                : PublicUrlUtil.getPublicOrigin(request) + request.getContextPath() + "/api/notify/callback";
+        config.put("callbackUrl", callbackUrl);
         return Result.success(config);
     }
 

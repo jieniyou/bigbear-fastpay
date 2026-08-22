@@ -30,11 +30,11 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/fastpay-server': {
-        target: 'http://121.4.28.146:80',
+        target: 'http://localhost:7001',
         changeOrigin: true
       },
       '/fastpay-server/ws': {
-        target: 'ws://121.4.28.146:80',
+        target: 'ws://localhost:7001',
         ws: true,
         changeOrigin: true
       }

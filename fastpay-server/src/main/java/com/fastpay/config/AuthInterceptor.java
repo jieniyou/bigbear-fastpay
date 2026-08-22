@@ -55,7 +55,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("userType", userType);
 
         // 验证访问权限
-        String uri = request.getRequestURI();
+        String uri = request.getServletPath();
         if (uri.startsWith("/api/admin/") && !"admin".equals(userType)) {
             throw BusinessException.forbidden("无权访问管理后台");
         }

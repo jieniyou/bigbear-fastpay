@@ -34,8 +34,8 @@ public class AsyncConfig {
         // 根据CPU核心数和内存动态计算线程池参数
         // 核心线程数：CPU核心数 * 2（IO密集型任务）
         int corePoolSize = Math.max(4, cpuCores * 2);
-        // 最大线程数：核心线程数 * 2，但不超过50
-        int maxPoolSize = Math.min(50, corePoolSize * 2);
+        // 最大线程数：核心线程数 * 2，但不低于核心线程数，避免高核心机器启动失败
+        int maxPoolSize = Math.max(corePoolSize, Math.min(100, corePoolSize * 2));
         // 队列容量：根据内存大小调整，每100MB内存分配100个队列位置，最小500，最大2000
         int queueCapacity = Math.min(2000, Math.max(500, (int) (maxMemory / 100) * 100));
         

@@ -184,6 +184,13 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     }
 
     @Override
+    public PayOrder queryMerchantOrder(String orderNo, Long merchantId) {
+        return this.getOne(new LambdaQueryWrapper<PayOrder>()
+                .eq(PayOrder::getOrderNo, orderNo)
+                .eq(PayOrder::getMerchantId, merchantId));
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirmPay(String orderNo, Long merchantId) {
         PayOrder order = this.queryOrder(orderNo);

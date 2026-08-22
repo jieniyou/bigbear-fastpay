@@ -198,12 +198,13 @@ public class PayNotifyServiceImpl implements PayNotifyService {
         final String orderNo = matchedOrder.getOrderNo();
         final String outTradeNo = matchedOrder.getOutTradeNo();
         final Long merchantId = matchedOrder.getMerchantId();
+        final String merchantNo = bizCallbackDTO.getMerchant() != null ? bizCallbackDTO.getMerchant().getMerchantNo() : null;
         final String amountStr = amount.toString();
 
         // 【优先】立即发送 WebSocket 通知，让用户页面第一时间收到支付结果
         wsNotifyExecutor.execute(() -> {
             try {
-                notifyPaySuccess(outTradeNo, orderNo, amountStr);
+                notifyPaySuccess(merchantNo, outTradeNo, orderNo, amountStr);
             } catch (Exception e) {
                 log.error("WebSocket通知发送异常，orderNo={}", orderNo, e);
             }
@@ -441,20 +442,26 @@ public class PayNotifyServiceImpl implements PayNotifyService {
      * 发送支付成功 WebSocket 通知
      * 用于通知支付页面订单已支付成功，前端收到后跳转到支付成功页面
      *
+     * @param merchantNo 商户编号
      * @param outTradeNo 商户订单号
      * @param orderNo    平台订单号
      * @param payAmount  实付金额
      */
-    private void notifyPaySuccess(String outTradeNo, String orderNo, String payAmount) {
+    private void notifyPaySuccess(String merchantNo, String outTradeNo, String orderNo, String payAmount) {
         try {
-            if (PayResultWebSocket.hasActiveConnection(outTradeNo)) {
-                PayResultWebSocket.sendPaySuccess(outTradeNo, orderNo, payAmount);
-                log.info("已发送支付成功WebSocket通知，outTradeNo={}, orderNo={}, payAmount={}", outTradeNo, orderNo, payAmount);
+            if (!StringUtils.hasText(merchantNo)) {
+                log.warn("商户编号为空，跳过WebSocket通知，outTradeNo={}, orderNo={}", outTradeNo, orderNo);
+                return;
+            }
+            if (PayResultWebSocket.hasActiveConnection(merchantNo, outTradeNo)) {
+                PayResultWebSocket.sendPaySuccess(merchantNo, outTradeNo, orderNo, payAmount);
+                log.info("已发送支付成功WebSocket通知，merchantNo={}, outTradeNo={}, orderNo={}, payAmount={}",
+                        merchantNo, outTradeNo, orderNo, payAmount);
             } else {
-                log.info("无活跃WebSocket连接，跳过通知，outTradeNo={}", outTradeNo);
+                log.info("无活跃WebSocket连接，跳过通知，merchantNo={}, outTradeNo={}", merchantNo, outTradeNo);
             }
         } catch (Exception e) {
-            log.error("发送支付成功WebSocket通知异常，outTradeNo={}", outTradeNo, e);
+            log.error("发送支付成功WebSocket通知异常，merchantNo={}, outTradeNo={}", merchantNo, outTradeNo, e);
         }
     }
 }

@@ -40,6 +40,15 @@ public interface PayOrderService extends IService<PayOrder> {
     PayOrder queryOrderByOutTradeNo(String merchantNo, String outTradeNo);
 
     /**
+     * 查询当前商户自己的订单详情
+     *
+     * @param orderNo    平台订单号
+     * @param merchantId 当前商户ID
+     * @return 订单信息
+     */
+    PayOrder queryMerchantOrder(String orderNo, Long merchantId);
+
+    /**
      * 手动确认支付
      *
      * @param orderNo    平台订单号

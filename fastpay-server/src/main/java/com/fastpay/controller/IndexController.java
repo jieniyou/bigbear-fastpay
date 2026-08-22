@@ -3,6 +3,7 @@ package com.fastpay.controller;
 import com.fastpay.common.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,6 +19,9 @@ import java.util.Map;
 @Tag(name = "系统接口", description = "系统状态检查相关接口")
 @RestController
 public class IndexController {
+
+    @Value("${fastpay.api-info-enabled:true}")
+    private Boolean apiInfoEnabled;
 
     /**
      * API 根路径 - 服务状态检查
@@ -48,6 +52,10 @@ public class IndexController {
     @Operation(summary = "接口信息", description = "获取API接口列表信息")
     @GetMapping("/api/info")
     public Result<Map<String, Object>> info() {
+        if (!Boolean.TRUE.equals(apiInfoEnabled)) {
+            return Result.error(404, "接口信息未启用");
+        }
+
         Map<String, Object> data = new HashMap<>();
         data.put("name", "Fast 易支付");
         data.put("description", "个人免签支付平台 API");

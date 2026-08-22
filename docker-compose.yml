@@ -1,0 +1,95 @@
+services:
+  fast_pay_gateway:
+    image: ${FASTPAY_IMAGE_PREFIX}-gateway:${FASTPAY_IMAGE_TAG}
+    container_name: fast_pay_gateway
+    restart: unless-stopped
+    depends_on:
+      - fast_pay_server
+      - fast_pay_admin
+      - fast_pay_merchant
+    ports:
+      - "${GATEWAY_HTTP_PORT}:80"
+    networks:
+      - fast_pay_net
+
+  fast_pay_mysql:
+    image: ${FASTPAY_IMAGE_PREFIX}-mysql:${FASTPAY_IMAGE_TAG}
+    container_name: fast_pay_mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --default-time-zone=+08:00
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - fast_pay_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - fast_pay_net
+
+  fast_pay_server:
+    image: ${FASTPAY_IMAGE_PREFIX}-server:${FASTPAY_IMAGE_TAG}
+    container_name: fast_pay_server
+    restart: unless-stopped
+    depends_on:
+      fast_pay_mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://fast_pay_mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      FASTPAY_JWT_SECRET: ${FASTPAY_JWT_SECRET}
+      FASTPAY_JWT_EXPIRE_HOURS: ${FASTPAY_JWT_EXPIRE_HOURS}
+      FASTPAY_ADMIN_INIT_ENABLED: ${FASTPAY_ADMIN_INIT_ENABLED}
+      FASTPAY_ADMIN_USERNAME: ${FASTPAY_ADMIN_USERNAME}
+      FASTPAY_ADMIN_PASSWORD: ${FASTPAY_ADMIN_PASSWORD}
+      FASTPAY_ORDER_TIMEOUT_MINUTES: ${FASTPAY_ORDER_TIMEOUT_MINUTES}
+      FASTPAY_API_INFO_ENABLED: ${FASTPAY_API_INFO_ENABLED}
+      KNIFE4J_ENABLED: ${KNIFE4J_ENABLED}
+      SPRINGDOC_API_DOCS_ENABLED: ${SPRINGDOC_API_DOCS_ENABLED}
+      SPRINGDOC_SWAGGER_UI_ENABLED: ${SPRINGDOC_SWAGGER_UI_ENABLED}
+    expose:
+      - "7001"
+    networks:
+      - fast_pay_net
+
+  fast_pay_admin:
+    image: ${FASTPAY_IMAGE_PREFIX}-admin:${FASTPAY_IMAGE_TAG}
+    container_name: fast_pay_admin
+    restart: unless-stopped
+    depends_on:
+      - fast_pay_server
+    expose:
+      - "80"
+    networks:
+      - fast_pay_net
+
+  fast_pay_merchant:
+    image: ${FASTPAY_IMAGE_PREFIX}-merchant:${FASTPAY_IMAGE_TAG}
+    container_name: fast_pay_merchant
+    restart: unless-stopped
+    depends_on:
+      - fast_pay_server
+    expose:
+      - "80"
+    networks:
+      - fast_pay_net
+
+networks:
+  fast_pay_net:
+    name: fast_pay_net
+
+volumes:
+  fast_pay_mysql_data:
+    name: fast_pay_mysql_data

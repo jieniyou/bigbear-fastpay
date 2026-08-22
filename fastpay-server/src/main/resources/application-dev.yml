@@ -8,14 +8,14 @@ server:
 spring:
   application:
     name: fastpay-server
-  
+
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/bigbear_fastpay?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username:
-    password:
-  
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/bigbear_fastpay?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+
   # Jackson 配置
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -59,23 +59,24 @@ knife4j:
 fastpay:
   # JWT 配置
   jwt:
-    secret: FastPaySecretKey2025Pjs8fk2Onsfk
+    secret: ${FASTPAY_JWT_SECRET:FastPayLocalJwtSecretChangeMe2026}
     # Token 有效期（小时）
     expire-hours: 12
-  
-  # 管理员默认账号
+
+  # 管理员初始化账号；默认关闭，空库首次启动时请临时配置强密码后再开启
   admin:
-    username: fastpay
-    password: 123456@
-  
+    init-enabled: false
+    username:
+    password:
+
   # 支付配置
   pay:
     # 订单超时时间（分钟）
     order-timeout-minutes: 3
     # 支付页面域名（商户前端地址）
-    page-domain: http://121.4.28.146/fastpay-merchant
-  
+    page-domain: http://localhost:3002/fastpay-merchant
+
   # 监听软件回调配置
   notify:
     # 监听软件回调地址（完整URL，用于模版展示）
-    callback-url: http://121.4.28.146/fastpay-server/api/notify/callback
+    callback-url: http://localhost:7001/fastpay-server/api/notify/callback

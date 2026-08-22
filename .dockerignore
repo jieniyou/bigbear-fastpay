@@ -1,0 +1,14 @@
+.git
+.idea
+node_modules
+dist
+target
+*.log
+*.zip
+.DS_Store
+fastpay-admin/node_modules
+fastpay-admin/dist
+fastpay-merchant/node_modules
+fastpay-merchant/dist
+fastpay-server/target
+fastpay-demo/target

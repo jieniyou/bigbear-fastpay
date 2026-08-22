@@ -17,7 +17,7 @@ DROP TABLE IF EXISTS `fp_admin`;
 CREATE TABLE `fp_admin` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `username` VARCHAR(50) NOT NULL COMMENT '用户名（登录账号）',
-    `password` VARCHAR(64) NOT NULL COMMENT '密码（MD5加密存储）',
+    `password` VARCHAR(64) NOT NULL COMMENT '密码（BCrypt加密存储，兼容历史MD5）',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称（显示名称）',
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像URL地址',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
@@ -40,7 +40,7 @@ CREATE TABLE `fp_merchant` (
     `merchant_no` VARCHAR(32) NOT NULL COMMENT '商户编号（唯一标识，用于API调用）',
     `merchant_name` VARCHAR(100) NOT NULL COMMENT '商户名称',
     `username` VARCHAR(50) NOT NULL COMMENT '登录用户名',
-    `password` VARCHAR(64) NOT NULL COMMENT '登录密码（MD5加密存储）',
+    `password` VARCHAR(64) NOT NULL COMMENT '登录密码（BCrypt加密存储，兼容历史MD5）',
     `contact_name` VARCHAR(50) DEFAULT NULL COMMENT '联系人姓名',
     `contact_phone` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
     `contact_email` VARCHAR(100) DEFAULT NULL COMMENT '联系邮箱',
@@ -180,10 +180,9 @@ CREATE TABLE `fp_pay_order` (
 -- 初始化数据
 -- =====================================================
 
--- 插入默认管理员账号（用户名：admin，密码：123456）
-INSERT INTO `fp_admin` (`username`, `password`, `nickname`, `avatar`, `status`) 
-VALUES ('admin', 'e10adc3949ba59abbe56e057f20f883e', '超级管理员', '/static/avatar/admin.png', 1)
-ON DUPLICATE KEY UPDATE `nickname` = '超级管理员';
+-- 不再插入固定默认管理员账号
+-- 首次管理员由服务端启动配置 fastpay.admin.init-enabled / username / password 控制，
+-- 生产环境请通过环境变量提供强密码，避免初始化后留下固定后台入口。
 
 -- =====================================================
 -- 表结构说明
