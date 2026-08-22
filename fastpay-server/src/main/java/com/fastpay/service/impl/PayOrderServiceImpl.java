@@ -133,8 +133,8 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         order.setAmount(dto.getAmount());
         order.setSubject(dto.getSubject());
         order.setStatus(Constants.OrderStatus.UNPAID);
-        order.setNotifyUrl(merchant.getNotifyUrl());
-        order.setReturnUrl(merchant.getReturnUrl());
+        order.setNotifyUrl(StringUtils.hasText(dto.getNotifyUrl()) ? dto.getNotifyUrl() : merchant.getNotifyUrl());
+        order.setReturnUrl(StringUtils.hasText(dto.getReturnUrl()) ? dto.getReturnUrl() : merchant.getReturnUrl());
         order.setNotifyStatus(0);
         order.setNotifyCount(0);
         order.setExpireTime(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
@@ -373,6 +373,11 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
             return;
         }
 
+        if (Constants.PayMethod.EPAY.equals(order.getPayMethod())) {
+            doSendEpayNotify(order, merchant, startTime);
+            return;
+        }
+
         // 构建回调参数
         TreeMap<String, Object> params = new TreeMap<>();
         params.put("merchantNo", merchant.getMerchantNo());
@@ -412,6 +417,73 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
             order.setLastNotifyTime(LocalDateTime.now());
             this.updateById(order);
         }
+    }
+
+    /**
+     * 发送标准易支付格式的回调通知。
+     *
+     * @param order     支付订单
+     * @param merchant  商户信息
+     * @param startTime 回调开始时间戳
+     */
+    private void doSendEpayNotify(PayOrder order, Merchant merchant, long startTime) {
+        TreeMap<String, Object> params = new TreeMap<>();
+        params.put("pid", merchant.getMerchantNo());
+        params.put("trade_no", order.getOrderNo());
+        params.put("out_trade_no", order.getOutTradeNo());
+        params.put("type", toEpayType(order.getPayType()));
+        params.put("name", order.getSubject());
+        params.put("money", formatMoney(order.getPayAmount() != null ? order.getPayAmount() : order.getAmount()));
+        params.put("trade_status", "TRADE_SUCCESS");
+        if (StringUtils.hasText(order.getExtParam())) {
+            params.put("param", order.getExtParam());
+        }
+        params.put("sign", com.fastpay.util.EpaySignUtil.generateSign(params, merchant.getApiSecret()));
+        params.put("sign_type", "MD5");
+
+        try {
+            String response = HttpUtil.post(order.getNotifyUrl(), params, 5000);
+            log.info("发送Epay回调通知成功: orderNo={}, response={}, 耗时{}ms",
+                    order.getOrderNo(), response, System.currentTimeMillis() - startTime);
+
+            order.setNotifyStatus("success".equalsIgnoreCase(response) ? 1 : 2);
+            order.setNotifyCount(order.getNotifyCount() + 1);
+            order.setLastNotifyTime(LocalDateTime.now());
+            this.updateById(order);
+        } catch (Exception e) {
+            log.error("发送Epay回调通知失败: orderNo={}, error={}, 耗时{}ms",
+                    order.getOrderNo(), e.getMessage(), System.currentTimeMillis() - startTime);
+            order.setNotifyStatus(2);
+            order.setNotifyCount(order.getNotifyCount() + 1);
+            order.setLastNotifyTime(LocalDateTime.now());
+            this.updateById(order);
+        }
+    }
+
+    /**
+     * 转换为标准易支付支付类型。
+     *
+     * @param payType FAST 易支付支付类型
+     * @return 标准易支付支付类型
+     */
+    private String toEpayType(String payType) {
+        if (Constants.PayType.ALIPAY.equals(payType)) {
+            return "alipay";
+        }
+        return "wxpay";
+    }
+
+    /**
+     * 格式化标准易支付金额。
+     *
+     * @param amount 订单金额
+     * @return 两位小数字符串
+     */
+    private String formatMoney(java.math.BigDecimal amount) {
+        if (amount == null) {
+            return "0.00";
+        }
+        return amount.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
     }
 
     @Override

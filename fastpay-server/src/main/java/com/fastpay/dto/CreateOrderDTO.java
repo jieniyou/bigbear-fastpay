@@ -78,5 +78,10 @@ public class CreateOrderDTO {
     /**
      * 支付成功后跳转地址
      */
-    String returnUrl;
+    private String returnUrl;
+
+    /**
+     * 支付成功后异步通知地址
+     */
+    private String notifyUrl;
 }
