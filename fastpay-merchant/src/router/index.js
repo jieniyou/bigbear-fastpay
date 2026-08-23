@@ -2,6 +2,7 @@
  * Fast 易支付 - 商户平台路由配置
  */
 import { createRouter, createWebHistory } from 'vue-router'
+import { applyBrandTitle } from '@/utils/brand'
 
 const routes = [
   // 公开页面
@@ -101,7 +102,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title ? `${to.meta.title} - FAST 易支付` : 'FAST 易支付'
+  applyBrandTitle(to.meta.title)
   
   // 公开页面直接放行
   if (to.meta.public) {

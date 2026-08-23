@@ -177,6 +177,26 @@ CREATE TABLE `fp_pay_order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付订单表 - 存储所有支付订单信息';
 
 -- =====================================================
+-- 7. 系统配置表 (fp_system_config)
+-- 说明：存储后台可编辑的网站基础信息等配置
+-- =====================================================
+DROP TABLE IF EXISTS `fp_system_config`;
+CREATE TABLE `fp_system_config` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `config_key` VARCHAR(100) NOT NULL COMMENT '配置键',
+    `config_value` TEXT COMMENT '配置值',
+    `remark` VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_config_key` (`config_key`) COMMENT '配置键唯一索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表 - 存储后台可编辑的网站基础信息';
+
+INSERT INTO `fp_system_config` (`config_key`, `config_value`, `remark`) VALUES
+('site.name', 'FAST 易支付', '网站名称'),
+('site.author', '大熊Bigbear', '网站署名');
+
+-- =====================================================
 -- 初始化数据
 -- =====================================================
 
@@ -194,6 +214,7 @@ CREATE TABLE `fp_pay_order` (
 -- 4. fp_merchant_channel - 商户通道表，配置商户的支付通道
 -- 5. fp_pay_qrcode   - 收款二维码表，存储商户上传的收款码
 -- 6. fp_pay_order    - 支付订单表，存储所有支付订单记录
+-- 7. fp_system_config - 系统配置表，存储网站名称和署名等配置
 --
 -- 关系说明：
 -- - 一个商户(merchant)可以有多个店铺(shop)

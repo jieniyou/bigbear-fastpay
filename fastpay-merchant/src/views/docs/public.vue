@@ -23,7 +23,7 @@
               <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
             </svg>
           </div>
-          <span class="logo-text">FAST 易支付</span>
+          <span class="logo-text">{{ brandConfig.siteName }}</span>
           <span class="logo-badge">开发文档</span>
         </div>
         <div class="header-actions">
@@ -58,7 +58,7 @@
           <!-- 产品介绍 -->
           <section id="intro" class="doc-section">
             <h2>产品介绍</h2>
-            <p>FAST 易支付是一款<strong>个人免签支付</strong>解决方案，通过普通收款码即可实现收款通知自动回调，支持绝大多数商城系统。</p>
+            <p>{{ brandConfig.siteName }}是一款<strong>个人免签支付</strong>解决方案，通过普通收款码即可实现收款通知自动回调，支持绝大多数商城系统。</p>
             <div class="feature-list">
               <div class="feature-item">
                 <el-icon><Check /></el-icon>
@@ -461,10 +461,13 @@ sign = MD5(str).toUpperCase()</pre>
 /**
  * Fast 易支付 - 公开开发文档
  */
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Link, Connection, Check } from '@element-plus/icons-vue'
+import { getPublicBrandConfig } from '@/api'
+import { applyBrandTitle, getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 
 const activeSection = ref('intro')
+const brandConfig = ref(getCachedBrandConfig())
 
 const scrollToSection = (index) => {
   activeSection.value = index
@@ -473,6 +476,21 @@ const scrollToSection = (index) => {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
+
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+    applyBrandTitle('开发文档')
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadBrandConfig()
+})
 
 // 页面跳转支付参数
 const pagePayParams = [

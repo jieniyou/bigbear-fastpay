@@ -237,6 +237,15 @@ export function resendNotify(orderNo) {
   return request.post(`/merchant/order/${orderNo}/notify`)
 }
 
+// ==================== 系统配置 ====================
+
+/**
+ * 获取公开品牌配置
+ */
+export function getPublicBrandConfig() {
+  return request.get('/system/brand')
+}
+
 // ==================== 支付页面（公开接口） ====================
 
 /**

@@ -23,7 +23,7 @@
               <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
             </svg>
           </div>
-          <span class="logo-text">FAST 易支付</span>
+          <span class="logo-text">{{ brandConfig.siteName }}</span>
           <span class="logo-badge">商户中心</span>
         </div>
         
@@ -88,12 +88,15 @@
  * Fast 易支付 - 商户平台布局组件
  * 参考微信/支付宝开发者平台设计
  */
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import { getPublicBrandConfig } from '@/api'
+import { applyBrandTitle, getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 
 const router = useRouter()
 const route = useRoute()
+const brandConfig = ref(getCachedBrandConfig())
 
 // 导航菜单
 const navItems = [
@@ -137,6 +140,21 @@ const handleCommand = (command) => {
     router.push('/console/config')
   }
 }
+
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+    applyBrandTitle(route.meta.title)
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadBrandConfig()
+})
 </script>
 
 <style scoped>

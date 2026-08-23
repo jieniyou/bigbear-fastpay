@@ -23,7 +23,7 @@
               <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
             </svg>
           </div>
-          <span class="logo-text">FAST 易支付</span>
+          <span class="logo-text">{{ brandConfig.siteName }}</span>
         </div>
         <nav class="nav-links">
           <a href="#features">产品特性</a>
@@ -248,7 +248,7 @@
                   <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
                 </svg>
               </div>
-              <span class="logo-text">FAST 易支付</span>
+              <span class="logo-text">{{ brandConfig.siteName }}</span>
             </div>
             <p>个人免签支付解决方案</p>
           </div>
@@ -266,7 +266,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>@ 2025 FAST 易支付. All rights reserved. by 大熊Bigbear</p>
+          <p>@ 2025 {{ brandConfig.siteName }}. All rights reserved. {{ brandConfig.authorText }}</p>
         </div>
       </div>
     </footer>
@@ -280,6 +280,8 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getPublicBrandConfig } from '@/api'
+import { applyBrandTitle, getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 import { 
   ArrowRight, 
   Document, 
@@ -294,6 +296,7 @@ import {
 const router = useRouter()
 const isScrolled = ref(false)
 const mobileMenuOpen = ref(false)
+const brandConfig = ref(getCachedBrandConfig())
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 20
@@ -307,7 +310,19 @@ const goDocs = () => {
   router.push('/docs')
 }
 
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+    applyBrandTitle('首页')
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
 onMounted(() => {
+  loadBrandConfig()
   window.addEventListener('scroll', handleScroll)
 })
 

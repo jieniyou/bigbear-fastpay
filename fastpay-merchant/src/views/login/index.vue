@@ -22,7 +22,7 @@
             <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
           </svg>
         </div>
-        <h1 class="brand-title">FAST 易支付</h1>
+        <h1 class="brand-title">{{ brandConfig.siteName }}</h1>
         <p class="brand-desc">安全、快捷的支付解决方案</p>
       </div>
       
@@ -102,14 +102,16 @@
 /**
  * Fast 易支付 - 商户登录页面
  */
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
-import { login } from '@/api'
+import { getPublicBrandConfig, login } from '@/api'
+import { applyBrandTitle, getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 
 const router = useRouter()
 const formRef = ref()
+const brandConfig = ref(getCachedBrandConfig())
 
 const formData = reactive({
   username: '',
@@ -122,6 +124,17 @@ const rules = {
 }
 
 const loading = ref(false)
+
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+    applyBrandTitle('商户登录')
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
 
 const handleLogin = async () => {
   if (!formRef.value) return
@@ -143,4 +156,8 @@ const handleLogin = async () => {
     }
   })
 }
+
+onMounted(() => {
+  loadBrandConfig()
+})
 </script>

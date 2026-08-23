@@ -4,7 +4,7 @@
     <div class="welcome-section">
       <div class="welcome-content">
         <h1>欢迎回来，管理员</h1>
-        <p>Fast 易支付管理后台 · {{ currentDate }}</p>
+        <p>{{ brandConfig.siteName }}管理后台 · {{ currentDate }}</p>
       </div>
       <div class="welcome-actions">
         <el-button type="primary" :loading="loading" @click="loadData">
@@ -249,13 +249,15 @@
  * Fast 易支付 - 控制台页面
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { getDashboard } from '@/api'
+import { getDashboard, getPublicBrandConfig } from '@/api'
+import { getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 import * as echarts from 'echarts'
 
 // 统计数据
 const dashboard = ref({})
 const chartRef = ref(null)
 const loading = ref(false)
+const brandConfig = ref(getCachedBrandConfig())
 let chartInstance = null
 
 // 当前日期
@@ -403,12 +405,23 @@ const loadData = async () => {
   }
 }
 
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
 // 窗口大小变化时重绘图表
 const handleResize = () => {
   chartInstance?.resize()
 }
 
 onMounted(() => {
+  loadBrandConfig()
   loadData()
   setTimeout(initChart, 100)
   window.addEventListener('resize', handleResize)

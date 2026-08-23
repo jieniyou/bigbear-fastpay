@@ -2,6 +2,7 @@
  * Fast 易支付 - 管理后台路由配置
  */
 import { createRouter, createWebHistory } from 'vue-router'
+import { applyBrandTitle } from '@/utils/brand'
 
 const routes = [
   {
@@ -44,6 +45,12 @@ const routes = [
         name: 'Order',
         component: () => import('@/views/order/index.vue'),
         meta: { title: '订单管理', icon: 'OrderedListOutlined' }
+      },
+      {
+        path: 'system-config',
+        name: 'SystemConfig',
+        component: () => import('@/views/system-config/index.vue'),
+        meta: { title: '系统配置', icon: 'Setting' }
       }
     ]
   }
@@ -57,7 +64,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - FAST 易支付` : 'FAST 易支付'
+  applyBrandTitle(to.meta.title)
   
   // 登录页面直接放行
   if (to.path === '/login') {

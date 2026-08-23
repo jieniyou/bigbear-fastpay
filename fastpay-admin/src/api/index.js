@@ -202,6 +202,29 @@ export function resendNotify(orderNo) {
   return request.post(`/admin/order/${orderNo}/notify`)
 }
 
+// ==================== 系统配置 ====================
+
+/**
+ * 获取公开品牌配置
+ */
+export function getPublicBrandConfig() {
+  return request.get('/system/brand')
+}
+
+/**
+ * 获取管理员品牌配置
+ */
+export function getAdminBrandConfig() {
+  return request.get('/admin/system-config/brand')
+}
+
+/**
+ * 更新管理员品牌配置
+ */
+export function updateBrandConfig(data) {
+  return request.put('/admin/system-config/brand', data)
+}
+
 // ==================== 通道管理 ====================
 
 /**

@@ -3,7 +3,7 @@
     <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="page-title">开发文档</h1>
-      <p class="page-desc">FAST 易支付 API 接入指南</p>
+      <p class="page-desc">{{ brandConfig.siteName }} API 接入指南</p>
     </div>
 
     <el-row :gutter="16">
@@ -57,7 +57,7 @@
             <span class="card-title">快速开始</span>
           </div>
           <div class="card-body">
-            <p>FAST 易支付提供简单易用的支付接口，支持两种接入方式：</p>
+            <p>{{ brandConfig.siteName }}提供简单易用的支付接口，支持两种接入方式：</p>
             <el-row :gutter="16" style="margin-top: 16px;">
               <el-col :span="12">
                 <div class="method-card">
@@ -400,10 +400,13 @@
 /**
  * Fast 易支付 - 开发文档
  */
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { getPublicBrandConfig } from '@/api'
+import { getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 
 const activeSection = ref('quick-start')
 const codeTab = ref('php')
+const brandConfig = ref(getCachedBrandConfig())
 
 const scrollToSection = (index) => {
   activeSection.value = index
@@ -412,6 +415,20 @@ const scrollToSection = (index) => {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
+
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadBrandConfig()
+})
 
 // 页面跳转支付参数
 const pagePayParams = [

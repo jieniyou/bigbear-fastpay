@@ -22,7 +22,7 @@
             <text x="20" y="26" text-anchor="middle" font-family="STKaiti, KaiTi, SimSun, serif" font-size="20" font-weight="bold" fill="white">易</text>
           </svg>
         </div>
-        <span v-if="!collapsed" class="logo-text">FAST 易支付</span>
+        <span v-if="!collapsed" class="logo-text">{{ brandConfig.siteName }}</span>
       </div>
       
       <el-menu
@@ -54,11 +54,15 @@
           <el-icon><List /></el-icon>
           <span>订单管理</span>
         </el-menu-item>
+        <el-menu-item index="/system-config">
+          <el-icon><Setting /></el-icon>
+          <span>系统配置</span>
+        </el-menu-item>
       </el-menu>
 
       <!-- 作者信息 -->
       <div class="sidebar-footer" v-if="!collapsed">
-        <span class="author-text">by 大熊Bigbear</span>
+        <span class="author-text">{{ brandConfig.authorText }}</span>
       </div>
     </aside>
 
@@ -113,15 +117,18 @@
 /**
  * Fast 易支付 - 管理后台布局组件
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import { getPublicBrandConfig } from '@/api'
+import { applyBrandTitle, getCachedBrandConfig, saveBrandConfig } from '@/utils/brand'
 
 const router = useRouter()
 const route = useRoute()
 
 // 侧边栏折叠状态
 const collapsed = ref(false)
+const brandConfig = ref(getCachedBrandConfig())
 
 // 当前选中的菜单
 const activeMenu = computed(() => route.path)
@@ -152,6 +159,36 @@ const handleLogout = () => {
     router.push('/login')
   }).catch(() => {})
 }
+
+// 加载品牌配置
+const loadBrandConfig = async () => {
+  try {
+    const res = await getPublicBrandConfig()
+    brandConfig.value = saveBrandConfig(res.data)
+    applyBrandTitle(route.meta.title)
+  } catch (error) {
+    console.warn('加载品牌配置失败:', error)
+  }
+}
+
+// 处理品牌配置更新事件
+const handleBrandConfigUpdated = (event) => {
+  brandConfig.value = event.detail || getCachedBrandConfig()
+  applyBrandTitle(route.meta.title)
+}
+
+watch(() => route.meta.title, (title) => {
+  applyBrandTitle(title)
+})
+
+onMounted(() => {
+  loadBrandConfig()
+  window.addEventListener('brand-config-updated', handleBrandConfigUpdated)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('brand-config-updated', handleBrandConfigUpdated)
+})
 </script>
 
 <style scoped>
