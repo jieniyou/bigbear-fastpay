@@ -15,6 +15,7 @@ import com.fastpay.mapper.MerchantMapper;
 import com.fastpay.mapper.PayOrderMapper;
 import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
+import com.fastpay.service.OrderMailService;
 import com.fastpay.service.PayOrderService;
 import com.fastpay.service.PayQrcodeService;
 import com.fastpay.util.SignUtil;
@@ -24,6 +25,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -45,6 +48,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     private final PayQrcodeMapper payQrcodeMapper;
     private final PayQrcodeService payQrcodeService;
     private final Executor payNotifyExecutor;
+    private final OrderMailService orderMailService;
 
     @Value("${fastpay.pay.order-timeout-minutes}")
     private Integer orderTimeoutMinutes;
@@ -54,12 +58,14 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
 
     public PayOrderServiceImpl(MerchantMapper merchantMapper, ShopMapper shopMapper,
                                PayQrcodeMapper payQrcodeMapper, PayQrcodeService payQrcodeService,
-                               @Qualifier("payNotifyExecutor") Executor payNotifyExecutor) {
+                               @Qualifier("payNotifyExecutor") Executor payNotifyExecutor,
+                               OrderMailService orderMailService) {
         this.merchantMapper = merchantMapper;
         this.shopMapper = shopMapper;
         this.payQrcodeMapper = payQrcodeMapper;
         this.payQrcodeService = payQrcodeService;
         this.payNotifyExecutor = payNotifyExecutor;
+        this.orderMailService = orderMailService;
     }
 
     @Override
@@ -143,6 +149,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
 
         this.save(order);
         log.info("创建支付订单成功: orderNo={}, amount={}", order.getOrderNo(), order.getAmount());
+        sendOrderMailAfterCommit(order, merchant, shop);
 
         // 构建返回结果
         PayResultVO vo = new PayResultVO();
@@ -162,6 +169,26 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         }
 
         return vo;
+    }
+
+    /**
+     * 事务提交后发送订单邮件通知。
+     *
+     * @param order    支付订单
+     * @param merchant 商户信息
+     * @param shop     店铺信息
+     */
+    private void sendOrderMailAfterCommit(PayOrder order, Merchant merchant, Shop shop) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    orderMailService.sendOrderCreatedNotice(order, merchant, shop);
+                }
+            });
+            return;
+        }
+        orderMailService.sendOrderCreatedNotice(order, merchant, shop);
     }
 
     @Override

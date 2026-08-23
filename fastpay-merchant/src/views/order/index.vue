@@ -195,8 +195,11 @@
  * Fast 易支付 - 订单管理
  */
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderPage, confirmOrder, closeOrder, resendNotify } from '@/api'
+
+const route = useRoute()
 
 const queryParams = reactive({
   current: 1,
@@ -309,6 +312,9 @@ const handleResendNotify = async (order) => {
 }
 
 onMounted(() => {
+  if (route.query.orderNo) {
+    queryParams.orderNo = String(route.query.orderNo)
+  }
   loadData()
 })
 </script>

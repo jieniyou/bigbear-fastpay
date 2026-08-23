@@ -36,9 +36,10 @@ public class MerchantOrderController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Long shopId,
             @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String orderNo,
             HttpServletRequest request) {
         Long merchantId = (Long) request.getAttribute("userId");
-        Page<PayOrder> page = payOrderService.pageMerchantOrders(new Page<>(current, size), merchantId, shopId, status);
+        Page<PayOrder> page = payOrderService.pageOrders(new Page<>(current, size), merchantId, shopId, orderNo, status);
         PageResult<PayOrder> result = new PageResult<>(page.getRecords(), page.getTotal(), page.getSize(), page.getCurrent());
         return Result.success(result);
     }

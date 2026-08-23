@@ -219,7 +219,11 @@ const formRules = {
   username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入登录密码', trigger: 'blur' }],
   contactName: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  contactEmail: [
+    { required: true, message: '请输入联系邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur', 'change'] }
+  ]
 }
 
 // 详情弹窗

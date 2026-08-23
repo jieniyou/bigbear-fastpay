@@ -194,7 +194,19 @@ CREATE TABLE `fp_system_config` (
 
 INSERT INTO `fp_system_config` (`config_key`, `config_value`, `remark`) VALUES
 ('site.name', 'FAST 易支付', '网站名称'),
-('site.author', '大熊Bigbear', '网站署名');
+('site.author', '大熊Bigbear', '网站署名'),
+('mail.enabled', 'false', '是否启用邮件服务'),
+('mail.smtp.host', '', 'SMTP服务器地址'),
+('mail.smtp.port', '465', 'SMTP服务器端口'),
+('mail.smtp.username', '', 'SMTP登录账号'),
+('mail.smtp.password', '', 'SMTP登录密码'),
+('mail.from.email', '', '发件邮箱'),
+('mail.from.name', 'FAST 易支付', '发件名称'),
+('mail.smtp.ssl-enabled', 'true', '是否启用SMTP SSL'),
+('mail.public-base-url', '', '平台外部访问地址'),
+('mail.event.order-notify.enabled', 'true', '普通订单通知事件开关'),
+('mail.event.order-action-notify.enabled', 'false', '带操作按钮订单通知事件开关'),
+('mail.action-token-expire-minutes', '30', '邮件操作链接有效期分钟数');
 
 -- =====================================================
 -- 初始化数据

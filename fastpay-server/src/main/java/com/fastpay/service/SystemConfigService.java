@@ -1,7 +1,9 @@
 package com.fastpay.service;
 
 import com.fastpay.dto.SystemBrandConfigDTO;
+import com.fastpay.dto.SystemMailConfigDTO;
 import com.fastpay.vo.SystemBrandConfigVO;
+import com.fastpay.vo.SystemMailConfigVO;
 
 /**
  * 系统配置服务接口
@@ -30,4 +32,26 @@ public interface SystemConfigService {
      * @return 更新后的品牌配置
      */
     SystemBrandConfigVO updateBrandConfig(SystemBrandConfigDTO dto);
+
+    /**
+     * 获取邮件配置。
+     *
+     * @return 邮件配置
+     */
+    SystemMailConfigVO getMailConfig();
+
+    /**
+     * 更新邮件配置。
+     *
+     * @param dto 邮件配置
+     * @return 更新后的邮件配置
+     */
+    SystemMailConfigVO updateMailConfig(SystemMailConfigDTO dto);
+
+    /**
+     * 获取邮件 SMTP 密码，仅服务端内部发送邮件时使用。
+     *
+     * @return SMTP 密码
+     */
+    String getMailSmtpPassword();
 }

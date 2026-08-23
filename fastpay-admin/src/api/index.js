@@ -225,6 +225,27 @@ export function updateBrandConfig(data) {
   return request.put('/admin/system-config/brand', data)
 }
 
+/**
+ * 获取管理员邮件配置
+ */
+export function getMailConfig() {
+  return request.get('/admin/system-config/mail')
+}
+
+/**
+ * 更新管理员邮件配置
+ */
+export function updateMailConfig(data) {
+  return request.put('/admin/system-config/mail', data)
+}
+
+/**
+ * 发送测试邮件
+ */
+export function sendTestMail(data) {
+  return request.post('/admin/system-config/mail/test', data)
+}
+
 // ==================== 通道管理 ====================
 
 /**

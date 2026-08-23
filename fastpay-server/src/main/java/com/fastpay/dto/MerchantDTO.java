@@ -1,5 +1,6 @@
 package com.fastpay.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -48,6 +49,8 @@ public class MerchantDTO {
     /**
      * 联系邮箱
      */
+    @NotBlank(message = "联系邮箱不能为空")
+    @Email(message = "联系邮箱格式不正确")
     private String contactEmail;
 
     /**
