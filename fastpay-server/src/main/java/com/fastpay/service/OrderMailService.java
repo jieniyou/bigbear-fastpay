@@ -18,8 +18,39 @@ public interface OrderMailService {
      * @param order    支付订单
      * @param merchant 商户信息
      * @param shop     店铺信息
+     * @param requestOrigin 下单请求公网 Origin，邮件配置外部地址留空时用于默认本站域名
      */
-    void sendOrderCreatedNotice(PayOrder order, Merchant merchant, Shop shop);
+    void sendOrderCreatedNotice(PayOrder order, Merchant merchant, Shop shop, String requestOrigin);
+
+    /**
+     * 异步发送订单确认通知。
+     *
+     * @param order 支付订单
+     */
+    void sendOrderConfirmedNotice(PayOrder order);
+
+    /**
+     * 异步发送订单确认通知，并携带当前访问域名用于邮件链接兜底。
+     *
+     * @param order         支付订单
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    void sendOrderConfirmedNotice(PayOrder order, String requestOrigin);
+
+    /**
+     * 异步发送订单关闭通知。
+     *
+     * @param order 支付订单
+     */
+    void sendOrderClosedNotice(PayOrder order);
+
+    /**
+     * 异步发送订单关闭通知，并携带当前访问域名用于邮件链接兜底。
+     *
+     * @param order         支付订单
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    void sendOrderClosedNotice(PayOrder order, String requestOrigin);
 
     /**
      * 发送测试邮件。

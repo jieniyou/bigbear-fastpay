@@ -71,6 +71,12 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PayResultVO createOrder(CreateOrderDTO dto, String clientIp) {
+        return createOrder(dto, clientIp, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PayResultVO createOrder(CreateOrderDTO dto, String clientIp, String requestOrigin) {
         // 验证商户
         Merchant merchant = merchantMapper.selectOne(new LambdaQueryWrapper<Merchant>()
                 .eq(Merchant::getMerchantNo, dto.getMerchantNo()));
@@ -149,7 +155,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
 
         this.save(order);
         log.info("创建支付订单成功: orderNo={}, amount={}", order.getOrderNo(), order.getAmount());
-        sendOrderMailAfterCommit(order, merchant, shop);
+        sendOrderMailAfterCommit(order, merchant, shop, requestOrigin);
 
         // 构建返回结果
         PayResultVO vo = new PayResultVO();
@@ -178,17 +184,44 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
      * @param merchant 商户信息
      * @param shop     店铺信息
      */
-    private void sendOrderMailAfterCommit(PayOrder order, Merchant merchant, Shop shop) {
+    private void sendOrderMailAfterCommit(PayOrder order, Merchant merchant, Shop shop, String requestOrigin) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    orderMailService.sendOrderCreatedNotice(order, merchant, shop);
+                    orderMailService.sendOrderCreatedNotice(order, merchant, shop, requestOrigin);
                 }
             });
             return;
         }
-        orderMailService.sendOrderCreatedNotice(order, merchant, shop);
+        orderMailService.sendOrderCreatedNotice(order, merchant, shop, requestOrigin);
+    }
+
+    /**
+     * 事务提交后发送订单结果邮件通知。
+     *
+     * @param order     支付订单
+     * @param confirmed 是否确认通知
+     */
+    private void sendOrderResultMailAfterCommit(PayOrder order, boolean confirmed, String requestOrigin) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    if (confirmed) {
+                        orderMailService.sendOrderConfirmedNotice(order, requestOrigin);
+                    } else {
+                        orderMailService.sendOrderClosedNotice(order, requestOrigin);
+                    }
+                }
+            });
+            return;
+        }
+        if (confirmed) {
+            orderMailService.sendOrderConfirmedNotice(order, requestOrigin);
+        } else {
+            orderMailService.sendOrderClosedNotice(order, requestOrigin);
+        }
     }
 
     @Override
@@ -220,6 +253,12 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirmPay(String orderNo, Long merchantId) {
+        confirmPay(orderNo, merchantId, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirmPay(String orderNo, Long merchantId, String requestOrigin) {
         PayOrder order = this.queryOrder(orderNo);
         if (order == null) {
             throw new BusinessException("订单不存在");
@@ -277,10 +316,18 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
                 log.error("异步发送回调通知异常: orderNo={}", finalOrderNo, e);
             }
         });
+        sendOrderResultMailAfterCommit(order, true, requestOrigin);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void closeOrder(String orderNo, Long merchantId) {
+        closeOrder(orderNo, merchantId, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void closeOrder(String orderNo, Long merchantId, String requestOrigin) {
         PayOrder order = this.queryOrder(orderNo);
         if (order == null) {
             throw new BusinessException("订单不存在");
@@ -298,6 +345,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
 
         order.setStatus(Constants.OrderStatus.CLOSED);
         this.updateById(order);
+        sendOrderResultMailAfterCommit(order, false, requestOrigin);
     }
 
     @Override

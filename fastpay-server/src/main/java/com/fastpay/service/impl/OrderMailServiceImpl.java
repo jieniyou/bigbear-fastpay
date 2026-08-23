@@ -5,6 +5,8 @@ import com.fastpay.common.Constants;
 import com.fastpay.entity.Merchant;
 import com.fastpay.entity.PayOrder;
 import com.fastpay.entity.Shop;
+import com.fastpay.mapper.MerchantMapper;
+import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.MailActionTokenService;
 import com.fastpay.service.OrderMailService;
 import com.fastpay.service.SystemConfigService;
@@ -27,12 +29,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
  * 订单邮件服务实现类
- * 动态读取后台邮件配置，订单通知失败不影响主支付流程。
+ * 动态读取后台邮件配置和 HTML 模板，订单通知失败不影响主支付流程。
  *
  * @author FastPay
  */
@@ -41,9 +45,14 @@ import java.util.concurrent.Executor;
 public class OrderMailServiceImpl implements OrderMailService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String ACTION_BUTTONS_PLACEHOLDER = "{{action_buttons}}";
+    private static final String CONFIRM_BUTTON_PLACEHOLDER = "{{confirm_button}}";
+    private static final String CLOSE_BUTTON_PLACEHOLDER = "{{close_button}}";
 
     private final SystemConfigService systemConfigService;
     private final MailActionTokenService mailActionTokenService;
+    private final MerchantMapper merchantMapper;
+    private final ShopMapper shopMapper;
     private final Executor payNotifyExecutor;
 
     @Value("${fastpay.pay.page-domain:}")
@@ -54,29 +63,76 @@ public class OrderMailServiceImpl implements OrderMailService {
 
     public OrderMailServiceImpl(SystemConfigService systemConfigService,
                                 MailActionTokenService mailActionTokenService,
+                                MerchantMapper merchantMapper,
+                                ShopMapper shopMapper,
                                 @Qualifier("payNotifyExecutor") Executor payNotifyExecutor) {
         this.systemConfigService = systemConfigService;
         this.mailActionTokenService = mailActionTokenService;
+        this.merchantMapper = merchantMapper;
+        this.shopMapper = shopMapper;
         this.payNotifyExecutor = payNotifyExecutor;
     }
 
     /**
      * 异步发送订单创建通知。
      *
-     * @param order    支付订单
-     * @param merchant 商户信息
-     * @param shop     店铺信息
+     * @param order         支付订单
+     * @param merchant      商户信息
+     * @param shop          店铺信息
+     * @param requestOrigin 下单请求公网 Origin
      */
     @Override
-    public void sendOrderCreatedNotice(PayOrder order, Merchant merchant, Shop shop) {
+    public void sendOrderCreatedNotice(PayOrder order, Merchant merchant, Shop shop, String requestOrigin) {
         payNotifyExecutor.execute(() -> {
             try {
-                doSendOrderCreatedNotice(order, merchant, shop);
+                doSendOrderNotice(order, merchant, shop, requestOrigin);
             } catch (Exception e) {
                 String orderNo = order == null ? "-" : order.getOrderNo();
                 log.warn("发送订单邮件通知失败: orderNo={}, error={}", orderNo, e.getMessage());
             }
         });
+    }
+
+    /**
+     * 异步发送订单确认通知。
+     *
+     * @param order 支付订单
+     */
+    @Override
+    public void sendOrderConfirmedNotice(PayOrder order) {
+        sendOrderConfirmedNotice(order, null);
+    }
+
+    /**
+     * 异步发送订单确认通知。
+     *
+     * @param order         支付订单
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    @Override
+    public void sendOrderConfirmedNotice(PayOrder order, String requestOrigin) {
+        sendOrderResultNotice(order, true, requestOrigin);
+    }
+
+    /**
+     * 异步发送订单关闭通知。
+     *
+     * @param order 支付订单
+     */
+    @Override
+    public void sendOrderClosedNotice(PayOrder order) {
+        sendOrderClosedNotice(order, null);
+    }
+
+    /**
+     * 异步发送订单关闭通知。
+     *
+     * @param order         支付订单
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    @Override
+    public void sendOrderClosedNotice(PayOrder order, String requestOrigin) {
+        sendOrderResultNotice(order, false, requestOrigin);
     }
 
     /**
@@ -88,7 +144,6 @@ public class OrderMailServiceImpl implements OrderMailService {
     public void sendTestMail(String testEmail) {
         SystemMailConfigVO config = systemConfigService.getMailConfig();
         validateMailConfig(config, testEmail);
-
         String subject = "[" + systemConfigService.getBrandConfig().getSiteName() + "] 邮件配置测试";
         String html = "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;\">"
                 + "<h2 style=\"margin:0 0 12px;\">邮件配置测试成功</h2>"
@@ -99,100 +154,216 @@ public class OrderMailServiceImpl implements OrderMailService {
     }
 
     /**
-     * 执行订单邮件通知发送。
+     * 执行普通订单通知发送。
      *
-     * @param order    支付订单
-     * @param merchant 商户信息
-     * @param shop     店铺信息
+     * @param order         支付订单
+     * @param merchant      商户信息
+     * @param shop          店铺信息
+     * @param requestOrigin 请求 Origin
      */
-    private void doSendOrderCreatedNotice(PayOrder order, Merchant merchant, Shop shop) {
-        if (order == null || merchant == null) {
-            return;
-        }
-
+    private void doSendOrderNotice(PayOrder order, Merchant merchant, Shop shop, String requestOrigin) {
         SystemMailConfigVO config = systemConfigService.getMailConfig();
-        if (!Boolean.TRUE.equals(config.getMailEnabled())) {
+        if (!canSendOrderMail(config, merchant) || !Boolean.TRUE.equals(config.getOrderNotifyEnabled())) {
             return;
         }
-        if (!Boolean.TRUE.equals(config.getOrderNotifyEnabled())
-                && !Boolean.TRUE.equals(config.getOrderActionNotifyEnabled())) {
-            return;
-        }
-        if (!StringUtils.hasText(merchant.getContactEmail())) {
-            log.warn("商户未配置联系邮箱，跳过订单邮件通知: merchantId={}, orderNo={}", merchant.getId(), order.getOrderNo());
-            return;
-        }
-        if (!isMailConfigReady(config)) {
-            log.warn("邮件服务未完整配置，跳过订单邮件通知: orderNo={}", order.getOrderNo());
-            return;
-        }
-
-        SystemBrandConfigVO brandConfig = systemConfigService.getBrandConfig();
-        boolean withActions = Boolean.TRUE.equals(config.getOrderActionNotifyEnabled());
-        String subject = "[" + brandConfig.getSiteName() + "] 新订单通知"
-                + (withActions ? "（可直接操作）" : "");
-        String html = buildOrderNoticeHtml(config, brandConfig, order, merchant, shop, withActions);
+        String template = config.getOrderNotifyTemplate();
+        Map<String, String> plainValues = buildPlainValues(config, order, merchant, shop, requestOrigin);
+        ActionLinks actionLinks = buildActionLinksIfNeeded(config, order, template, requestOrigin);
+        Map<String, String> htmlValues = buildHtmlValues(plainValues, actionLinks);
+        String subject = renderPlainText(config.getOrderNotifySubject(), plainValues);
+        String html = renderHtmlTemplate(template, htmlValues);
         sendHtmlMail(config, merchant.getContactEmail(), subject, html);
     }
 
     /**
-     * 构建订单通知邮件正文。
+     * 异步发送订单结果通知。
      *
-     * @param config      邮件配置
-     * @param brandConfig 品牌配置
-     * @param order       支付订单
-     * @param merchant    商户信息
-     * @param shop        店铺信息
-     * @param withActions 是否带操作按钮
-     * @return HTML 邮件正文
+     * @param order     支付订单
+     * @param confirmed 是否确认通知
      */
-    private String buildOrderNoticeHtml(SystemMailConfigVO config, SystemBrandConfigVO brandConfig,
-                                        PayOrder order, Merchant merchant, Shop shop, boolean withActions) {
-        StringBuilder rows = new StringBuilder();
-        appendRow(rows, "商户", merchant.getMerchantName() + "（" + merchant.getMerchantNo() + "）");
-        appendRow(rows, "店铺", buildShopName(order, shop));
-        appendRow(rows, "平台订单号", order.getOrderNo());
-        appendRow(rows, "商户订单号", order.getOutTradeNo());
-        appendRow(rows, "商品名称", order.getSubject());
-        appendRow(rows, "订单金额", "¥" + formatAmount(order.getAmount()));
-        appendRow(rows, "支付类型", formatPayType(order.getPayType()));
-        appendRow(rows, "订单状态", formatStatus(order.getStatus()));
-        appendRow(rows, "创建时间", formatTime(order.getCreateTime()));
-        appendRow(rows, "过期时间", formatTime(order.getExpireTime()));
-        appendRow(rows, "客户端IP", order.getClientIp());
-        if (StringUtils.hasText(order.getNotifyUrl())) {
-            appendRow(rows, "回调地址", order.getNotifyUrl());
+    private void sendOrderResultNotice(PayOrder order, boolean confirmed, String requestOrigin) {
+        payNotifyExecutor.execute(() -> {
+            try {
+                doSendOrderResultNotice(order, confirmed, requestOrigin);
+            } catch (Exception e) {
+                String orderNo = order == null ? "-" : order.getOrderNo();
+                log.warn("发送订单结果邮件失败: orderNo={}, confirmed={}, error={}", orderNo, confirmed, e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 执行订单结果通知发送。
+     *
+     * @param order     支付订单
+     * @param confirmed 是否确认通知
+     */
+    private void doSendOrderResultNotice(PayOrder order, boolean confirmed, String requestOrigin) {
+        if (order == null) {
+            return;
         }
-        if (StringUtils.hasText(order.getReturnUrl())) {
-            appendRow(rows, "跳转地址", order.getReturnUrl());
+        Merchant merchant = merchantMapper.selectById(order.getMerchantId());
+        Shop shop = order.getShopId() == null ? null : shopMapper.selectById(order.getShopId());
+        SystemMailConfigVO config = systemConfigService.getMailConfig();
+        if (!canSendOrderMail(config, merchant)) {
+            return;
+        }
+        if (confirmed && !Boolean.TRUE.equals(config.getOrderConfirmNotifyEnabled())) {
+            return;
+        }
+        if (!confirmed && !Boolean.TRUE.equals(config.getOrderCloseNotifyEnabled())) {
+            return;
         }
 
-        String orderUrl = buildMerchantOrderUrl(config, order.getOrderNo());
-        StringBuilder actions = new StringBuilder();
-        actions.append("<a href=\"").append(escape(orderUrl)).append("\" ")
-                .append("style=\"display:inline-block;margin-right:10px;padding:10px 16px;border-radius:4px;background:#409eff;color:#fff;text-decoration:none;\">查看订单</a>");
-        if (withActions) {
-            String confirmUrl = buildActionUrl(config, order, "confirm");
-            String closeUrl = buildActionUrl(config, order, "close");
-            actions.append("<a href=\"").append(escape(confirmUrl)).append("\" ")
-                    .append("style=\"display:inline-block;margin-right:10px;padding:10px 16px;border-radius:4px;background:#67c23a;color:#fff;text-decoration:none;\">确认收款</a>");
-            actions.append("<a href=\"").append(escape(closeUrl)).append("\" ")
-                    .append("style=\"display:inline-block;padding:10px 16px;border-radius:4px;background:#f56c6c;color:#fff;text-decoration:none;\">关闭订单</a>");
+        String subjectTemplate = confirmed ? config.getOrderConfirmNotifySubject() : config.getOrderCloseNotifySubject();
+        String htmlTemplate = confirmed ? config.getOrderConfirmNotifyTemplate() : config.getOrderCloseNotifyTemplate();
+        Map<String, String> plainValues = buildPlainValues(config, order, merchant, shop, requestOrigin);
+        plainValues.put("operation_name", confirmed ? "确认收款" : "关闭订单");
+        plainValues.put("operation_time", formatTime(LocalDateTime.now()));
+        Map<String, String> htmlValues = buildHtmlValues(plainValues, ActionLinks.empty());
+        String subject = renderPlainText(subjectTemplate, plainValues);
+        String html = renderHtmlTemplate(htmlTemplate, htmlValues);
+        sendHtmlMail(config, merchant.getContactEmail(), subject, html);
+    }
+
+    /**
+     * 判断是否允许发送订单邮件。
+     *
+     * @param config   邮件配置
+     * @param merchant 商户信息
+     * @return 是否允许发送
+     */
+    private boolean canSendOrderMail(SystemMailConfigVO config, Merchant merchant) {
+        if (config == null || !Boolean.TRUE.equals(config.getMailEnabled())) {
+            return false;
         }
+        if (merchant == null || !StringUtils.hasText(merchant.getContactEmail())) {
+            return false;
+        }
+        if (!isMailConfigReady(config)) {
+            log.warn("邮件服务未完整配置，跳过订单邮件通知");
+            return false;
+        }
+        return true;
+    }
 
-        String actionTip = withActions
-                ? "确认/关闭按钮为一次业务操作入口，链接会在 " + config.getActionTokenExpireMinutes() + " 分钟后过期。"
-                : "请登录商户后台核对后再处理订单。";
+    /**
+     * 构建普通文本占位符。
+     *
+     * @param config        邮件配置
+     * @param order         支付订单
+     * @param merchant      商户信息
+     * @param shop          店铺信息
+     * @param requestOrigin 请求 Origin
+     * @return 占位符值
+     */
+    private Map<String, String> buildPlainValues(SystemMailConfigVO config, PayOrder order, Merchant merchant, Shop shop, String requestOrigin) {
+        SystemBrandConfigVO brandConfig = systemConfigService.getBrandConfig();
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("site_name", brandConfig.getSiteName());
+        values.put("site_author", brandConfig.getSiteAuthor());
+        values.put("author_text", brandConfig.getAuthorText());
+        values.put("merchant_name", value(merchant.getMerchantName()));
+        values.put("merchant_no", value(merchant.getMerchantNo()));
+        values.put("shop_name", buildShopName(order, shop));
+        values.put("shop_no", shop != null ? value(shop.getShopNo()) : value(order.getShopNo()));
+        values.put("order_no", value(order.getOrderNo()));
+        values.put("out_trade_no", value(order.getOutTradeNo()));
+        values.put("subject", value(order.getSubject()));
+        values.put("amount", formatAmount(order.getAmount()));
+        values.put("pay_amount", formatAmount(order.getPayAmount() != null ? order.getPayAmount() : order.getAmount()));
+        values.put("pay_type", value(order.getPayType()));
+        values.put("pay_type_text", formatPayType(order.getPayType()));
+        values.put("pay_method", value(order.getPayMethod()));
+        values.put("order_status", formatStatus(order.getStatus()));
+        values.put("notify_status", String.valueOf(order.getNotifyStatus() == null ? 0 : order.getNotifyStatus()));
+        values.put("create_time", formatTime(order.getCreateTime()));
+        values.put("expire_time", formatTime(order.getExpireTime()));
+        values.put("pay_time", formatTime(order.getPayTime()));
+        values.put("client_ip", value(order.getClientIp()));
+        values.put("notify_url", value(order.getNotifyUrl()));
+        values.put("return_url", value(order.getReturnUrl()));
+        values.put("order_url", buildMerchantOrderUrl(config, order.getOrderNo(), requestOrigin));
+        return values;
+    }
 
-        return "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;\">"
-                + "<h2 style=\"margin:0 0 8px;\">" + escape(brandConfig.getSiteName()) + " 新订单通知</h2>"
-                + "<p style=\"margin:0 0 16px;color:#606266;\">收到一笔待确认订单，请核对收款记录后处理。</p>"
-                + "<table style=\"border-collapse:collapse;width:100%;font-size:14px;\">" + rows + "</table>"
-                + "<div style=\"margin:22px 0;\">" + actions + "</div>"
-                + "<p style=\"margin:0;color:#909399;font-size:13px;\">" + escape(actionTip) + "</p>"
-                + "<p style=\"margin:12px 0 0;color:#909399;font-size:13px;\">"
-                + escape(brandConfig.getAuthorText()) + "</p>"
-                + "</div>";
+    /**
+     * 构建 HTML 占位符。
+     *
+     * @param plainValues 文本占位符
+     * @param actionLinks 操作链接
+     * @return HTML占位符
+     */
+    private Map<String, String> buildHtmlValues(Map<String, String> plainValues, ActionLinks actionLinks) {
+        Map<String, String> htmlValues = new LinkedHashMap<>();
+        plainValues.forEach((key, value) -> htmlValues.put(key, escape(value)));
+        htmlValues.put("confirm_button", actionLinks.confirmButton);
+        htmlValues.put("close_button", actionLinks.closeButton);
+        htmlValues.put("action_buttons", actionLinks.actionButtons);
+        return htmlValues;
+    }
+
+    /**
+     * 按模板需要创建操作链接。
+     *
+     * @param config        邮件配置
+     * @param order         支付订单
+     * @param template      HTML模板
+     * @param requestOrigin 请求 Origin
+     * @return 操作链接HTML
+     */
+    private ActionLinks buildActionLinksIfNeeded(SystemMailConfigVO config, PayOrder order, String template, String requestOrigin) {
+        if (!templateNeedsActions(template)) {
+            return ActionLinks.empty();
+        }
+        String confirmUrl = buildActionUrl(config, order, "confirm", requestOrigin);
+        String closeUrl = buildActionUrl(config, order, "close", requestOrigin);
+        String confirmButton = "<a href=\"" + escape(confirmUrl) + "\" style=\"display:inline-block;margin-right:10px;padding:10px 16px;border-radius:4px;background:#67c23a;color:#fff;text-decoration:none;\">确认收款</a>";
+        String closeButton = "<a href=\"" + escape(closeUrl) + "\" style=\"display:inline-block;padding:10px 16px;border-radius:4px;background:#f56c6c;color:#fff;text-decoration:none;\">关闭订单</a>";
+        return new ActionLinks(confirmButton, closeButton, confirmButton + closeButton);
+    }
+
+    /**
+     * 判断模板是否包含操作按钮占位符。
+     *
+     * @param template HTML模板
+     * @return 是否需要操作按钮
+     */
+    private boolean templateNeedsActions(String template) {
+        return StringUtils.hasText(template)
+                && (template.contains(ACTION_BUTTONS_PLACEHOLDER)
+                || template.contains(CONFIRM_BUTTON_PLACEHOLDER)
+                || template.contains(CLOSE_BUTTON_PLACEHOLDER));
+    }
+
+    /**
+     * 渲染 HTML 模板。
+     *
+     * @param template HTML模板
+     * @param values   占位符
+     * @return 渲染结果
+     */
+    private String renderHtmlTemplate(String template, Map<String, String> values) {
+        String result = template == null ? "" : template;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue() == null ? "" : entry.getValue());
+        }
+        return result;
+    }
+
+    /**
+     * 渲染邮件主题。
+     *
+     * @param template 主题模板
+     * @param values   占位符
+     * @return 主题文本
+     */
+    private String renderPlainText(String template, Map<String, String> values) {
+        String result = template == null ? "" : template;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue() == null ? "" : entry.getValue());
+        }
+        return result;
     }
 
     /**
@@ -234,7 +405,6 @@ public class OrderMailServiceImpl implements OrderMailService {
             sender.setUsername(config.getSmtpUsername());
             sender.setPassword(systemConfigService.getMailSmtpPassword());
         }
-
         Properties properties = sender.getJavaMailProperties();
         properties.put("mail.smtp.auth", String.valueOf(StringUtils.hasText(config.getSmtpUsername())));
         properties.put("mail.smtp.ssl.enable", String.valueOf(Boolean.TRUE.equals(config.getSslEnabled())));
@@ -278,22 +448,6 @@ public class OrderMailServiceImpl implements OrderMailService {
     }
 
     /**
-     * 增加表格行。
-     *
-     * @param rows  表格内容
-     * @param label 标签
-     * @param value 值
-     */
-    private void appendRow(StringBuilder rows, String label, String value) {
-        rows.append("<tr>")
-                .append("<td style=\"width:130px;padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">")
-                .append(escape(label))
-                .append("</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">")
-                .append(escape(StringUtils.hasText(value) ? value : "-"))
-                .append("</td></tr>");
-    }
-
-    /**
      * 构建店铺显示名称。
      *
      * @param order 支付订单
@@ -313,55 +467,59 @@ public class OrderMailServiceImpl implements OrderMailService {
     /**
      * 构建商户端订单列表链接。
      *
-     * @param config  邮件配置
-     * @param orderNo 平台订单号
+     * @param config        邮件配置
+     * @param orderNo       平台订单号
+     * @param requestOrigin 请求 Origin
      * @return 订单列表链接
      */
-    private String buildMerchantOrderUrl(SystemMailConfigVO config, String orderNo) {
-        String base = normalizeMerchantBaseUrl(config);
+    private String buildMerchantOrderUrl(SystemMailConfigVO config, String orderNo, String requestOrigin) {
+        String base = normalizeMerchantBaseUrl(config, requestOrigin);
         return base + "/console/order?orderNo=" + urlEncode(orderNo);
     }
 
     /**
      * 构建订单操作链接。
      *
-     * @param config 邮件配置
-     * @param order  支付订单
-     * @param action 操作类型
+     * @param config        邮件配置
+     * @param order         支付订单
+     * @param action        操作类型
+     * @param requestOrigin 请求 Origin
      * @return 操作链接
      */
-    private String buildActionUrl(SystemMailConfigVO config, PayOrder order, String action) {
+    private String buildActionUrl(SystemMailConfigVO config, PayOrder order, String action, String requestOrigin) {
         String token = mailActionTokenService.generateOrderActionToken(
                 order.getMerchantId(),
                 order.getOrderNo(),
                 action,
                 config.getActionTokenExpireMinutes()
         );
-        return normalizeServerBaseUrl(config) + "/api/mail/order-action?token=" + urlEncode(token);
+        return normalizeServerBaseUrl(config, requestOrigin) + "/api/mail/order-action?token=" + urlEncode(token);
     }
 
     /**
      * 归一化商户端基础地址。
      *
-     * @param config 邮件配置
+     * @param config        邮件配置
+     * @param requestOrigin 请求 Origin
      * @return 商户端基础地址
      */
-    private String normalizeMerchantBaseUrl(SystemMailConfigVO config) {
+    private String normalizeMerchantBaseUrl(SystemMailConfigVO config, String requestOrigin) {
         if (StringUtils.hasText(pageDomain)) {
             return trimTrailingSlash(pageDomain);
         }
-        String origin = resolvePublicOrigin(config);
+        String origin = resolvePublicOrigin(config, requestOrigin);
         return origin + "/fastpay-merchant";
     }
 
     /**
      * 归一化服务端基础地址。
      *
-     * @param config 邮件配置
+     * @param config        邮件配置
+     * @param requestOrigin 请求 Origin
      * @return 服务端基础地址
      */
-    private String normalizeServerBaseUrl(SystemMailConfigVO config) {
-        String origin = resolvePublicOrigin(config);
+    private String normalizeServerBaseUrl(SystemMailConfigVO config, String requestOrigin) {
+        String origin = resolvePublicOrigin(config, requestOrigin);
         String contextPath = StringUtils.hasText(serverContextPath) ? serverContextPath : "/fastpay-server";
         if (!contextPath.startsWith("/")) {
             contextPath = "/" + contextPath;
@@ -375,12 +533,16 @@ public class OrderMailServiceImpl implements OrderMailService {
     /**
      * 解析公网 Origin。
      *
-     * @param config 邮件配置
+     * @param config        邮件配置
+     * @param requestOrigin 请求 Origin
      * @return 公网 Origin
      */
-    private String resolvePublicOrigin(SystemMailConfigVO config) {
+    private String resolvePublicOrigin(SystemMailConfigVO config, String requestOrigin) {
         if (StringUtils.hasText(config.getPublicBaseUrl())) {
             return stripKnownAppPath(trimTrailingSlash(config.getPublicBaseUrl()));
+        }
+        if (StringUtils.hasText(requestOrigin)) {
+            return stripKnownAppPath(trimTrailingSlash(requestOrigin));
         }
         if (StringUtils.hasText(pageDomain)) {
             return stripKnownAppPath(trimTrailingSlash(pageDomain));
@@ -457,7 +619,7 @@ public class OrderMailServiceImpl implements OrderMailService {
         if (Constants.PayType.ALIPAY.equals(payType)) {
             return "支付宝";
         }
-        return payType;
+        return value(payType);
     }
 
     /**
@@ -483,6 +645,16 @@ public class OrderMailServiceImpl implements OrderMailService {
     }
 
     /**
+     * 空值兜底。
+     *
+     * @param value 原始值
+     * @return 非空文本
+     */
+    private String value(String value) {
+        return StringUtils.hasText(value) ? value : "-";
+    }
+
+    /**
      * HTML 转义。
      *
      * @param value 原始文本
@@ -500,5 +672,19 @@ public class OrderMailServiceImpl implements OrderMailService {
      */
     private String urlEncode(String value) {
         return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 邮件操作按钮 HTML。
+     */
+    private record ActionLinks(String confirmButton, String closeButton, String actionButtons) {
+        /**
+         * 空按钮组。
+         *
+         * @return 空按钮组
+         */
+        private static ActionLinks empty() {
+            return new ActionLinks("", "", "");
+        }
     }
 }

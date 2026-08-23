@@ -5,6 +5,7 @@ import com.fastpay.common.PageResult;
 import com.fastpay.common.Result;
 import com.fastpay.entity.PayOrder;
 import com.fastpay.service.PayOrderService;
+import com.fastpay.util.PublicUrlUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,7 +63,7 @@ public class MerchantOrderController {
     @PostMapping("/{orderNo}/confirm")
     public Result<Void> confirmPay(@PathVariable String orderNo, HttpServletRequest request) {
         Long merchantId = (Long) request.getAttribute("userId");
-        payOrderService.confirmPay(orderNo, merchantId);
+        payOrderService.confirmPay(orderNo, merchantId, PublicUrlUtil.getPublicOrigin(request));
         return Result.success("确认成功", null);
     }
 
@@ -73,7 +74,7 @@ public class MerchantOrderController {
     @PostMapping("/{orderNo}/close")
     public Result<Void> closeOrder(@PathVariable String orderNo, HttpServletRequest request) {
         Long merchantId = (Long) request.getAttribute("userId");
-        payOrderService.closeOrder(orderNo, merchantId);
+        payOrderService.closeOrder(orderNo, merchantId, PublicUrlUtil.getPublicOrigin(request));
         return Result.success("关闭成功", null);
     }
 

@@ -3,6 +3,8 @@ package com.fastpay.controller;
 import com.fastpay.common.BusinessException;
 import com.fastpay.service.MailActionTokenService;
 import com.fastpay.service.PayOrderService;
+import com.fastpay.util.PublicUrlUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,15 +41,16 @@ public class MailActionController {
      * @return HTML 操作结果页
      */
     @GetMapping(value = "/order-action", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> handleOrderAction(@RequestParam String token) {
+    public ResponseEntity<String> handleOrderAction(@RequestParam String token, HttpServletRequest request) {
         try {
-            MailActionTokenService.OrderActionPayload payload = mailActionTokenService.verifyOrderActionToken(token);
+            MailActionTokenService.OrderActionPayload payload = mailActionTokenService.consumeOrderActionToken(token);
+            String requestOrigin = PublicUrlUtil.getPublicOrigin(request);
             if (mailActionTokenService.isConfirmAction(payload.getAction())) {
-                payOrderService.confirmPay(payload.getOrderNo(), payload.getMerchantId());
+                payOrderService.confirmPay(payload.getOrderNo(), payload.getMerchantId(), requestOrigin);
                 return html("订单已确认", "订单 " + payload.getOrderNo() + " 已确认收款，并已触发商户回调通知。", true);
             }
             if (mailActionTokenService.isCloseAction(payload.getAction())) {
-                payOrderService.closeOrder(payload.getOrderNo(), payload.getMerchantId());
+                payOrderService.closeOrder(payload.getOrderNo(), payload.getMerchantId(), requestOrigin);
                 return html("订单已关闭", "订单 " + payload.getOrderNo() + " 已关闭。", true);
             }
             return html("操作失败", "不支持的订单操作。", false);

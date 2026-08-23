@@ -68,9 +68,44 @@ public class SystemMailConfigDTO {
     private Boolean orderNotifyEnabled;
 
     /**
-     * 是否启用带操作按钮的订单通知
+     * 订单通知邮件主题
      */
-    private Boolean orderActionNotifyEnabled;
+    private String orderNotifySubject;
+
+    /**
+     * 订单通知 HTML 模板
+     */
+    private String orderNotifyTemplate;
+
+    /**
+     * 是否启用订单确认通知
+     */
+    private Boolean orderConfirmNotifyEnabled;
+
+    /**
+     * 订单确认通知邮件主题
+     */
+    private String orderConfirmNotifySubject;
+
+    /**
+     * 订单确认通知 HTML 模板
+     */
+    private String orderConfirmNotifyTemplate;
+
+    /**
+     * 是否启用订单关闭通知
+     */
+    private Boolean orderCloseNotifyEnabled;
+
+    /**
+     * 订单关闭通知邮件主题
+     */
+    private String orderCloseNotifySubject;
+
+    /**
+     * 订单关闭通知 HTML 模板
+     */
+    private String orderCloseNotifyTemplate;
 
     /**
      * 邮件操作链接有效期，单位：分钟

@@ -161,7 +161,7 @@ CREATE TABLE `fp_pay_order` (
     `last_notify_time` DATETIME DEFAULT NULL COMMENT '最后通知时间',
     `pay_time` DATETIME DEFAULT NULL COMMENT '支付时间（用户完成支付的时间）',
     `expire_time` DATETIME DEFAULT NULL COMMENT '过期时间（订单超过此时间未支付将自动关闭）',
-    `client_ip` VARCHAR(50) DEFAULT NULL COMMENT '客户端IP地址（发起支付请求的客户端IP）',
+    `client_ip` VARCHAR(64) DEFAULT NULL COMMENT '客户端IP地址（仅保存单个合法IPv4/IPv6）',
     `ext_param` TEXT COMMENT '扩展参数（JSON格式，用于存储额外信息）',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -205,8 +205,35 @@ INSERT INTO `fp_system_config` (`config_key`, `config_value`, `remark`) VALUES
 ('mail.smtp.ssl-enabled', 'true', '是否启用SMTP SSL'),
 ('mail.public-base-url', '', '平台外部访问地址'),
 ('mail.event.order-notify.enabled', 'true', '普通订单通知事件开关'),
-('mail.event.order-action-notify.enabled', 'false', '带操作按钮订单通知事件开关'),
+('mail.event.order-notify.subject', '【{{site_name}}】新订单通知：{{order_no}}', '普通订单通知邮件主题'),
+('mail.event.order-notify.template', '', '普通订单通知HTML模板，留空时使用系统默认模板'),
+('mail.event.order-confirm.enabled', 'true', '订单确认通知事件开关'),
+('mail.event.order-confirm.subject', '【{{site_name}}】订单确认成功：{{order_no}}', '订单确认通知邮件主题'),
+('mail.event.order-confirm.template', '', '订单确认通知HTML模板，留空时使用系统默认模板'),
+('mail.event.order-close.enabled', 'true', '订单关闭通知事件开关'),
+('mail.event.order-close.subject', '【{{site_name}}】订单已关闭：{{order_no}}', '订单关闭通知邮件主题'),
+('mail.event.order-close.template', '', '订单关闭通知HTML模板，留空时使用系统默认模板'),
 ('mail.action-token-expire-minutes', '30', '邮件操作链接有效期分钟数');
+
+-- =====================================================
+-- 8. 邮件订单操作 Token 表 (fp_mail_action_token)
+-- 说明：存储邮件确认/关闭按钮的一次性消费记录
+-- =====================================================
+DROP TABLE IF EXISTS `fp_mail_action_token`;
+CREATE TABLE `fp_mail_action_token` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `token_hash` VARCHAR(64) NOT NULL COMMENT 'Token SHA-256摘要',
+    `merchant_id` BIGINT NOT NULL COMMENT '商户ID',
+    `order_no` VARCHAR(32) NOT NULL COMMENT '平台订单号',
+    `action` VARCHAR(20) NOT NULL COMMENT '操作类型：confirm/close',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间',
+    `used_time` DATETIME DEFAULT NULL COMMENT '使用时间',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_token_hash` (`token_hash`) COMMENT 'Token摘要唯一索引',
+    KEY `idx_order_action` (`merchant_id`, `order_no`, `used_time`) COMMENT '同一订单操作失效索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='邮件订单操作Token表 - 存储邮件按钮一次性消费记录';
 
 -- =====================================================
 -- 初始化数据
@@ -227,6 +254,7 @@ INSERT INTO `fp_system_config` (`config_key`, `config_value`, `remark`) VALUES
 -- 5. fp_pay_qrcode   - 收款二维码表，存储商户上传的收款码
 -- 6. fp_pay_order    - 支付订单表，存储所有支付订单记录
 -- 7. fp_system_config - 系统配置表，存储网站名称和署名等配置
+-- 8. fp_mail_action_token - 邮件订单操作Token表，存储确认/关闭按钮的一次性消费记录
 --
 -- 关系说明：
 -- - 一个商户(merchant)可以有多个店铺(shop)

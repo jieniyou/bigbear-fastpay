@@ -23,6 +23,16 @@ public interface PayOrderService extends IService<PayOrder> {
     PayResultVO createOrder(CreateOrderDTO dto, String clientIp);
 
     /**
+     * 创建支付订单，并携带当前访问域名用于邮件链接。
+     *
+     * @param dto           订单信息
+     * @param clientIp      客户端IP
+     * @param requestOrigin 当前请求公网 Origin
+     * @return 支付结果
+     */
+    PayResultVO createOrder(CreateOrderDTO dto, String clientIp, String requestOrigin);
+
+    /**
      * 查询订单状态
      *
      * @param orderNo 平台订单号
@@ -57,12 +67,30 @@ public interface PayOrderService extends IService<PayOrder> {
     void confirmPay(String orderNo, Long merchantId);
 
     /**
+     * 手动确认支付，并携带当前访问域名用于邮件链接兜底。
+     *
+     * @param orderNo       平台订单号
+     * @param merchantId    商户ID
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    void confirmPay(String orderNo, Long merchantId, String requestOrigin);
+
+    /**
      * 关闭订单
      *
      * @param orderNo    平台订单号
      * @param merchantId 商户ID
      */
     void closeOrder(String orderNo, Long merchantId);
+
+    /**
+     * 关闭订单，并携带当前访问域名用于邮件链接兜底。
+     *
+     * @param orderNo       平台订单号
+     * @param merchantId    商户ID
+     * @param requestOrigin 当前请求公网 Origin
+     */
+    void closeOrder(String orderNo, Long merchantId, String requestOrigin);
 
     /**
      * 分页查询订单列表（管理员）

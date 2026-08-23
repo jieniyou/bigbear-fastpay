@@ -12,6 +12,7 @@ import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.PayOrderService;
 import com.fastpay.util.PublicUrlUtil;
+import com.fastpay.util.ClientIpUtil;
 import com.fastpay.vo.PayResultVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,10 +71,10 @@ public class PayController {
     @PostMapping("/create")
     @ResponseBody
     public Result<PayResultVO> createOrder(@Valid @RequestBody CreateOrderDTO dto, HttpServletRequest request) {
-        String clientIp = getClientIp(request);
+        String clientIp = ClientIpUtil.resolve(request);
         // 强制设置为api方式
         dto.setPayMethod(Constants.PayMethod.API);
-        PayResultVO vo = payOrderService.createOrder(dto, clientIp);
+        PayResultVO vo = payOrderService.createOrder(dto, clientIp, PublicUrlUtil.getPublicOrigin(request));
         return Result.success(vo);
     }
 
@@ -94,8 +95,8 @@ public class PayController {
             dto.setPayMethod(Constants.PayMethod.PAGE);
             
             // 创建订单
-            String clientIp = getClientIp(request);
-            PayResultVO vo = payOrderService.createOrder(dto, clientIp);
+            String clientIp = ClientIpUtil.resolve(request);
+            PayResultVO vo = payOrderService.createOrder(dto, clientIp, PublicUrlUtil.getPublicOrigin(request));
             final String returnUrl = dto.getReturnUrl();
             // 如果商户传了 returnUrl，更新订单的 returnUrl
             if (returnUrl != null && !returnUrl.isEmpty()) {
@@ -228,20 +229,6 @@ public class PayController {
         result.put("returnUrl", order.getReturnUrl());
 
         return Result.success(result);
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
     }
 
     /**

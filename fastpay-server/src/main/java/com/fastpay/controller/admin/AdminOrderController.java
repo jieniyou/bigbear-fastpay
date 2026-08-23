@@ -5,8 +5,10 @@ import com.fastpay.common.PageResult;
 import com.fastpay.common.Result;
 import com.fastpay.entity.PayOrder;
 import com.fastpay.service.PayOrderService;
+import com.fastpay.util.PublicUrlUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -57,8 +59,8 @@ public class AdminOrderController {
      */
     @Operation(summary = "确认支付", description = "手动确认订单已支付")
     @PostMapping("/{orderNo}/confirm")
-    public Result<Void> confirmPay(@PathVariable String orderNo) {
-        payOrderService.confirmPay(orderNo, null);
+    public Result<Void> confirmPay(@PathVariable String orderNo, HttpServletRequest request) {
+        payOrderService.confirmPay(orderNo, null, PublicUrlUtil.getPublicOrigin(request));
         return Result.success("确认成功", null);
     }
 
@@ -67,8 +69,8 @@ public class AdminOrderController {
      */
     @Operation(summary = "关闭订单", description = "关闭未支付的订单")
     @PostMapping("/{orderNo}/close")
-    public Result<Void> closeOrder(@PathVariable String orderNo) {
-        payOrderService.closeOrder(orderNo, null);
+    public Result<Void> closeOrder(@PathVariable String orderNo, HttpServletRequest request) {
+        payOrderService.closeOrder(orderNo, null, PublicUrlUtil.getPublicOrigin(request));
         return Result.success("关闭成功", null);
     }
 

@@ -13,6 +13,7 @@ import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.PayOrderService;
 import com.fastpay.util.EpaySignUtil;
+import com.fastpay.util.ClientIpUtil;
 import com.fastpay.util.PublicUrlUtil;
 import com.fastpay.util.SignUtil;
 import com.fastpay.vo.PayResultVO;
@@ -174,7 +175,7 @@ public class EpayCompatController {
         dto.setTimestamp(System.currentTimeMillis() / 1000);
         dto.setSign(buildFastPaySign(dto, merchant.getApiSecret()));
 
-        return payOrderService.createOrder(dto, getClientIp(request));
+        return payOrderService.createOrder(dto, ClientIpUtil.resolve(request), PublicUrlUtil.getPublicOrigin(request));
     }
 
     /**
@@ -444,26 +445,6 @@ public class EpayCompatController {
     private String value(Map<String, String> params, String key) {
         String value = params.get(key);
         return value == null ? "" : value.trim();
-    }
-
-    /**
-     * 获取客户端 IP。
-     *
-     * @param request 当前请求
-     * @return 客户端 IP
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
     }
 
     /**

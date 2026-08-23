@@ -359,3 +359,29 @@ docker compose logs -f fast_pay_server
 - 已通过：`fastpay-merchant` 执行 `npm run build`。
 - 已检查：后端和 Demo 配置中不再保留原公网 IP、演示商户号、演示 API Secret 或固定默认管理员账号。
 - 未执行：当前本机未检测到 `docker` / `docker-compose` 命令，`docker compose pull` 和 `docker compose up -d` 需要在已安装 Docker 的服务器上执行。
+
+### 订单客户端 IP 截断修复
+
+支付下单会经过 Nginx/CDN 等反向代理，`X-Forwarded-For` 可能包含多个地址。服务端现在只提取第一个合法 IPv4/IPv6 地址写入 `fp_pay_order.client_ip`，不再把整段代理链保存到订单。数据库字段已统一为 `VARCHAR(64)`。
+
+已有数据库升级时，在目标数据库执行：
+
+```sql
+-- 将旧的 client_ip 字段扩容，并与新初始化结构保持一致。
+SOURCE fastpay-server/src/main/resources/db/002_fix_client_ip.sql;
+```
+
+Docker 镜像构建也会把该迁移复制到 MySQL 初始化目录；已有数据卷不会自动重复执行初始化脚本，线上已有卷必须手动执行上述迁移后再发布服务端镜像。
+
+### 邮件事件模板与一次性按钮迁移
+
+订单邮件现在按事件维护邮件主题和 HTML 模板，并新增 `订单确认通知`、`订单关闭通知` 两个结果通知事件。邮件中的确认/关闭按钮由模板占位符 `{{action_buttons}}`、`{{confirm_button}}`、`{{close_button}}` 控制；链接写入 `fp_mail_action_token` 后只能消费一次，同一订单任一按钮使用后其它按钮同步失效。
+
+已有数据库升级时，在目标数据库执行：
+
+```sql
+-- 创建邮件操作 Token 表，并补齐邮件事件配置键。
+SOURCE fastpay-server/src/main/resources/db/003_mail_event_templates.sql;
+```
+
+`平台外部访问地址` 可以留空；留空时系统会按当前请求域名生成邮件中的商户端订单链接和操作链接。已有 Docker 数据卷同样不会自动重复执行初始化脚本，线上已有卷需要手动执行该迁移。
