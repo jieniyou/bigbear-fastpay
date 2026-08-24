@@ -73,11 +73,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
      * @return 完整 HTML 模板
      */
     private static String buildMailShell(String title, String contentHtml) {
-        return "<!doctype html><html><body style=\"margin:0;padding:24px;background:#f3f5fa;"
+        return "<!doctype html><html><body style=\"margin:0;padding:24px;background:#f5f7fa;"
                 + "font-family:Arial,'Microsoft YaHei',sans-serif;color:#252a3a;\">"
                 + "<div style=\"max-width:640px;margin:0 auto;overflow:hidden;border:1px solid #e2e5ef;"
                 + "border-radius:10px;background:#ffffff;box-shadow:0 12px 34px rgba(35,42,72,.10);\">"
-                + "<div style=\"padding:24px 28px;color:#ffffff;background:#5968df;\">"
+                + "<div style=\"padding:24px 28px;color:#ffffff;background:#3b82f6;\">"
                 + "<div style=\"font-size:13px;opacity:.82;\">{{site_name}}</div>"
                 + "<h1 style=\"margin:7px 0 0;font-size:24px;line-height:1.35;\">" + title + "</h1></div>"
                 + "<div style=\"padding:28px;font-size:15px;line-height:1.8;\">" + contentHtml + "</div>"
@@ -94,7 +94,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private static String buildOrderNoticeTemplate() {
         return buildMailShell("新订单通知",
                 "<p style=\"margin:0 0 18px;\">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 收到一笔待确认订单。</p>"
-                        + "<div style=\"margin:18px 0;padding:18px;border-radius:8px;color:#5968df;background:#f0f2ff;text-align:center;\">"
+                        + "<div style=\"margin:18px 0;padding:18px;border-radius:8px;color:#3b82f6;background:#eff6ff;text-align:center;\">"
                         + "<div style=\"font-size:13px;color:#70778a;\">订单金额</div>"
                         + "<div style=\"font-size:32px;font-weight:700;letter-spacing:1px;\">¥{{amount}}</div></div>"
                         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
@@ -124,7 +124,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                         + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商户订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{out_trade_no}}</td></tr>"
                         + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商品名称</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{subject}}</td></tr>"
                         + "<tr><td style=\"padding:10px 0;color:#70778a;\">确认时间</td><td style=\"padding:10px 0;\">{{pay_time}}</td></tr></table>"
-                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;\">查看订单</a></p>");
+                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#3b82f6;text-decoration:none;font-weight:700;\">查看订单</a></p>");
     }
 
     /**
@@ -143,7 +143,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                         + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商户订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{out_trade_no}}</td></tr>"
                         + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商品名称</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{subject}}</td></tr>"
                         + "<tr><td style=\"padding:10px 0;color:#70778a;\">关闭时间</td><td style=\"padding:10px 0;\">{{operation_time}}</td></tr></table>"
-                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;\">查看订单</a></p>");
+                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#3b82f6;text-decoration:none;font-weight:700;\">查看订单</a></p>");
     }
 
     /**

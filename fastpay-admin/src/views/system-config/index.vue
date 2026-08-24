@@ -375,9 +375,9 @@ const brandData = reactive({
 const buildMailShell = (title, contentHtml) => {
   return `<!doctype html>
 <html>
-<body style="margin:0;padding:24px;background:#f3f5fa;font-family:Arial,'Microsoft YaHei',sans-serif;color:#252a3a;">
+<body style="margin:0;padding:24px;background:#f5f7fa;font-family:Arial,'Microsoft YaHei',sans-serif;color:#252a3a;">
   <div style="max-width:640px;margin:0 auto;overflow:hidden;border:1px solid #e2e5ef;border-radius:10px;background:#ffffff;box-shadow:0 12px 34px rgba(35,42,72,.10);">
-    <div style="padding:24px 28px;color:#ffffff;background:#5968df;">
+    <div style="padding:24px 28px;color:#ffffff;background:#3b82f6;">
       <div style="font-size:13px;opacity:.82;">{{site_name}}</div>
       <h1 style="margin:7px 0 0;font-size:24px;line-height:1.35;">${title}</h1>
     </div>
@@ -398,7 +398,7 @@ ${contentHtml}
  * @returns {string} 订单通知模板
  */
 const buildOrderNoticeTemplate = () => buildMailShell('新订单通知', `      <p style="margin:0 0 18px;">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 收到一笔待确认订单。</p>
-      <div style="margin:18px 0;padding:18px;border-radius:8px;color:#5968df;background:#f0f2ff;text-align:center;">
+      <div style="margin:18px 0;padding:18px;border-radius:8px;color:#3b82f6;background:#eff6ff;text-align:center;">
         <div style="font-size:13px;color:#70778a;">订单金额</div>
         <div style="font-size:32px;font-weight:700;letter-spacing:1px;">¥{{amount}}</div>
       </div>
@@ -429,7 +429,7 @@ const buildOrderConfirmTemplate = () => buildMailShell('订单确认成功', `  
         <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商品名称</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{subject}}</td></tr>
         <tr><td style="padding:10px 0;color:#70778a;">确认时间</td><td style="padding:10px 0;">{{pay_time}}</td></tr>
       </table>
-      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;">查看订单</a></p>`)
+      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#3b82f6;text-decoration:none;font-weight:700;">查看订单</a></p>`)
 
 /**
  * 构建订单关闭默认模板。
@@ -447,7 +447,7 @@ const buildOrderCloseTemplate = () => buildMailShell('订单已关闭', `      <
         <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商品名称</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{subject}}</td></tr>
         <tr><td style="padding:10px 0;color:#70778a;">关闭时间</td><td style="padding:10px 0;">{{operation_time}}</td></tr>
       </table>
-      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;">查看订单</a></p>`)
+      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#3b82f6;text-decoration:none;font-weight:700;">查看订单</a></p>`)
 
 // 邮件事件默认模板
 const defaultTemplates = {
@@ -826,7 +826,7 @@ const formatPlaceholder = (key) => {
  * @returns {string} 确认按钮 HTML
  */
 const sampleConfirmButton = () => {
-  return '<a href="#" style="display:inline-block;margin-right:10px;padding:11px 18px;border-radius:6px;background:#5968df;color:#fff;text-decoration:none;font-weight:700;">确认收款</a>'
+  return '<a href="#" style="display:inline-block;margin-right:10px;padding:11px 18px;border-radius:6px;background:#3b82f6;color:#fff;text-decoration:none;font-weight:700;">确认收款</a>'
 }
 
 /**
@@ -857,8 +857,8 @@ onMounted(async () => {
 .dark-config-page {
   min-height: calc(100vh - 120px);
   padding: 14px;
-  color: #dce5ff;
-  background: #0d1424;
+  color: #303133;
+  background: #f5f7fa;
 }
 
 .settings-nav {
@@ -867,9 +867,10 @@ onMounted(async () => {
   gap: 14px;
   margin-bottom: 16px;
   padding: 10px 18px;
-  border: 1px solid #26324c;
+  border: 1px solid #ebeef5;
   border-radius: 8px;
-  background: #111a2c;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, .06);
 }
 
 .settings-nav-item {
@@ -880,17 +881,17 @@ onMounted(async () => {
   min-height: 48px;
   border: 1px solid transparent;
   border-radius: 7px;
-  color: #aeb9d8;
+  color: #606266;
   background: transparent;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 
   &.active {
-    color: #f2f5ff;
-    border-color: #34436b;
-    background: #252f50;
-    box-shadow: inset 0 -2px 0 #7868ff;
+    color: #3b82f6;
+    border-color: #bfdbfe;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: inset 0 -2px 0 #3b82f6;
   }
 
   &.disabled {
@@ -907,8 +908,8 @@ onMounted(async () => {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  color: #dfe5ff;
-  background: #25305a;
+  color: #3b82f6;
+  background: #eff6ff;
   font-size: 16px;
   font-weight: 800;
 
@@ -919,9 +920,10 @@ onMounted(async () => {
 
 .config-shell {
   overflow: hidden;
-  border: 1px solid #26324c;
+  border: 1px solid #ebeef5;
   border-radius: 8px;
-  background: #111827;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(48, 65, 86, .06);
 }
 
 .mail-titlebar {
@@ -929,8 +931,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 20px 22px;
-  border-bottom: 1px solid #26324c;
-  background: #121b2d;
+  border-bottom: 1px solid #ebeef5;
+  background: #fff;
 }
 
 .title-left {
@@ -940,13 +942,13 @@ onMounted(async () => {
 
   h2 {
     margin: 0;
-    color: #f5f7ff;
+    color: #303133;
     font-size: 22px;
   }
 
   p {
     margin: 4px 0 0;
-    color: #8795b8;
+    color: #909399;
     font-size: 13px;
   }
 }
@@ -959,13 +961,13 @@ onMounted(async () => {
   height: 34px;
   border-radius: 7px;
   color: #fff;
-  background: #665ff0;
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
   font-size: 18px;
   font-weight: 800;
 }
 
 .permission-pill {
-  color: #7c8cff;
+  color: #3b82f6;
   font-size: 13px;
 }
 
@@ -989,9 +991,10 @@ onMounted(async () => {
 
 .dark-card,
 .status-card {
-  border: 1px solid #26324c;
+  border: 1px solid #ebeef5;
   border-radius: 8px;
-  background: #121b2d;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(48, 65, 86, .05);
 }
 
 .dark-card {
@@ -1004,17 +1007,17 @@ onMounted(async () => {
   gap: 14px;
   margin-bottom: 24px;
   padding-bottom: 18px;
-  border-bottom: 1px solid #2a3652;
+  border-bottom: 1px solid #ebeef5;
 
   h3 {
     margin: 0;
-    color: #f5f7ff;
+    color: #303133;
     font-size: 20px;
   }
 
   p {
     margin: 4px 0 0;
-    color: #8795b8;
+    color: #909399;
     font-size: 13px;
   }
 
@@ -1047,17 +1050,17 @@ onMounted(async () => {
   gap: 20px;
   margin-top: 12px;
   padding: 18px 0;
-  border-top: 1px solid #2a3652;
-  border-bottom: 1px solid #2a3652;
+  border-top: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
 
   strong {
-    color: #f5f7ff;
+    color: #303133;
     font-size: 15px;
   }
 
   p {
     margin: 5px 0 0;
-    color: #8795b8;
+    color: #909399;
     font-size: 13px;
   }
 }
@@ -1085,7 +1088,7 @@ onMounted(async () => {
 .event-select-field label {
   display: block;
   margin-bottom: 8px;
-  color: #cbd6f4;
+  color: #606266;
   font-size: 13px;
   font-weight: 700;
 }
@@ -1096,12 +1099,12 @@ onMounted(async () => {
 
 .event-desc-card {
   padding: 12px 16px;
-  border-left: 3px solid #7466ff;
-  background: #1a2438;
+  border-left: 3px solid #3b82f6;
+  background: #eff6ff;
 
   p {
     margin: 6px 0 0;
-    color: #8795b8;
+    color: #606266;
     font-size: 13px;
   }
 }
@@ -1111,7 +1114,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #f5f7ff;
+  color: #303133;
   font-weight: 700;
 }
 
@@ -1125,9 +1128,9 @@ onMounted(async () => {
 .preview-panel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #2a3652;
+  border: 1px solid #ebeef5;
   border-radius: 8px;
-  background: #0e1626;
+  background: #fff;
 }
 
 .panel-bar {
@@ -1136,14 +1139,14 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px;
-  border-bottom: 1px solid #2a3652;
-  color: #cfd8f4;
-  background: #1a2438;
+  border-bottom: 1px solid #ebeef5;
+  color: #303133;
+  background: #f8fafc;
   font-weight: 800;
 
   em {
     overflow: hidden;
-    color: #8795b8;
+    color: #909399;
     font-size: 12px;
     font-style: normal;
     font-weight: 600;
@@ -1164,8 +1167,8 @@ onMounted(async () => {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    background: #0e1626;
-    color: #dce5ff;
+    background: #fff;
+    color: #303133;
     font-family: Consolas, 'Courier New', monospace;
     line-height: 1.7;
   }
@@ -1173,15 +1176,15 @@ onMounted(async () => {
 
 .placeholder-strip {
   padding: 14px 16px;
-  border-top: 1px solid #2a3652;
+  border-top: 1px solid #ebeef5;
 
   strong {
-    color: #f5f7ff;
+    color: #303133;
   }
 
   p {
     margin: 4px 0 12px;
-    color: #8795b8;
+    color: #909399;
     font-size: 12px;
   }
 }
@@ -1193,7 +1196,7 @@ onMounted(async () => {
 .group-title {
   display: inline-block;
   min-width: 72px;
-  color: #8795b8;
+  color: #909399;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1201,17 +1204,17 @@ onMounted(async () => {
 .placeholder-chip {
   margin: 0 6px 8px 0;
   padding: 7px 10px;
-  border: 1px solid #354369;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
-  color: #dce5ff;
-  background: #25305a;
+  color: #3b82f6;
+  background: #eff6ff;
   font-size: 12px;
   cursor: pointer;
 
   &:hover {
-    border-color: #7466ff;
+    border-color: #3b82f6;
     color: #fff;
-    background: #34306f;
+    background: #3b82f6;
   }
 }
 
@@ -1220,7 +1223,7 @@ onMounted(async () => {
   width: 100%;
   min-height: 662px;
   border: 0;
-  background: #f3f5fa;
+  background: #f5f7fa;
 }
 
 .mail-side {
@@ -1233,13 +1236,13 @@ onMounted(async () => {
 
   h3 {
     margin: 16px 0 4px;
-    color: #f5f7ff;
+    color: #303133;
     font-size: 19px;
   }
 
   > p {
     margin: 0 0 18px;
-    color: #8795b8;
+    color: #909399;
   }
 }
 
@@ -1262,24 +1265,24 @@ onMounted(async () => {
 }
 
 .status-list {
-  border-top: 1px solid #2a3652;
+  border-top: 1px solid #ebeef5;
 
   div {
     display: flex;
     justify-content: space-between;
     gap: 14px;
     padding: 13px 0;
-    border-bottom: 1px solid #2a3652;
+    border-bottom: 1px solid #ebeef5;
   }
 
   span {
-    color: #8795b8;
+    color: #909399;
   }
 
   b {
     max-width: 180px;
     overflow: hidden;
-    color: #dce5ff;
+    color: #303133;
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1292,9 +1295,9 @@ onMounted(async () => {
   gap: 14px;
   margin-top: 8px;
   padding: 18px;
-  border: 1px solid #2a3652;
+  border: 1px solid #ebeef5;
   border-radius: 8px;
-  background: #0e1626;
+  background: #f8fafc;
 }
 
 .preview-logo {
@@ -1305,26 +1308,26 @@ onMounted(async () => {
   height: 44px;
   border-radius: 10px;
   color: #fff;
-  background: linear-gradient(135deg, #5968df, #7b5ff2);
+  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
   font-family: STKaiti, KaiTi, SimSun, serif;
   font-size: 24px;
   font-weight: 700;
 }
 
 .preview-name {
-  color: #f5f7ff;
+  color: #303133;
   font-weight: 700;
 }
 
 .preview-author {
   margin-top: 4px;
-  color: #8795b8;
+  color: #909399;
   font-size: 13px;
 }
 
 .form-tip {
   margin-top: 7px;
-  color: #8795b8;
+  color: #909399;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -1334,7 +1337,7 @@ onMounted(async () => {
 }
 
 :deep(.el-form-item__label) {
-  color: #cbd6f4;
+  color: #606266;
   font-weight: 800;
 }
 
@@ -1342,40 +1345,40 @@ onMounted(async () => {
 :deep(.el-input-number__decrease),
 :deep(.el-input-number__increase),
 :deep(.el-select__wrapper) {
-  border: 1px solid #33405f;
+  border: 1px solid #dcdfe6;
   border-radius: 6px;
   box-shadow: none;
-  background: #172137;
-  color: #dce5ff;
+  background: #fff;
+  color: #303133;
 }
 
 :deep(.el-input__inner),
 :deep(.el-select__placeholder),
 :deep(.el-select__selected-item) {
-  color: #dce5ff;
+  color: #303133;
   font-weight: 700;
 }
 
 :deep(.el-input__inner::placeholder),
 :deep(.el-textarea__inner::placeholder) {
-  color: #63708e;
+  color: #c0c4cc;
 }
 
 :deep(.el-input-number__decrease),
 :deep(.el-input-number__increase) {
-  color: #9ba8cc;
-  background: #202b44;
+  color: #606266;
+  background: #f5f7fa;
 }
 
 :deep(.el-button--primary) {
-  border-color: #6d63f4;
-  background: linear-gradient(135deg, #5669f2, #7b5ff2);
+  border-color: #409eff;
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
 }
 
 :deep(.el-button:not(.el-button--primary)) {
-  border-color: #33405f;
-  color: #cbd6f4;
-  background: #1b2540;
+  border-color: #dcdfe6;
+  color: #606266;
+  background: #fff;
 }
 
 @media (max-width: 1420px) {
