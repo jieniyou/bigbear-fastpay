@@ -454,7 +454,7 @@ const mailEvents = [
   }
 ]
 
-const placeholderGroups = [
+const basePlaceholderGroups = [
   {
     title: '站点',
     items: [{ key: 'site_name' }, { key: 'site_author' }, { key: 'author_text' }]
@@ -465,29 +465,75 @@ const placeholderGroups = [
   },
   {
     title: '订单',
-    items: [
-      { key: 'order_no' },
-      { key: 'out_trade_no' },
-      { key: 'subject' },
-      { key: 'amount' },
-      { key: 'pay_amount' },
-      { key: 'pay_type_text' },
-      { key: 'order_status' },
-      { key: 'create_time' },
-      { key: 'expire_time' },
-      { key: 'pay_time' },
-      { key: 'operation_time' },
-      { key: 'client_ip' },
-      { key: 'notify_url' },
-      { key: 'return_url' },
-      { key: 'order_url' }
-    ]
-  },
-  {
-    title: '邮件操作',
-    items: [{ key: 'action_buttons' }, { key: 'confirm_button' }, { key: 'close_button' }]
+    items: []
   }
 ]
+
+const orderPlaceholderItems = {
+  orderNotify: [
+    { key: 'order_no' },
+    { key: 'out_trade_no' },
+    { key: 'subject' },
+    { key: 'amount' },
+    { key: 'pay_type_text' },
+    { key: 'order_status' },
+    { key: 'create_time' },
+    { key: 'expire_time' },
+    { key: 'client_ip' },
+    { key: 'notify_url' },
+    { key: 'return_url' },
+    { key: 'order_url' }
+  ],
+  orderConfirm: [
+    { key: 'order_no' },
+    { key: 'out_trade_no' },
+    { key: 'subject' },
+    { key: 'amount' },
+    { key: 'pay_amount' },
+    { key: 'pay_type_text' },
+    { key: 'order_status' },
+    { key: 'create_time' },
+    { key: 'pay_time' },
+    { key: 'client_ip' },
+    { key: 'notify_url' },
+    { key: 'return_url' },
+    { key: 'order_url' }
+  ],
+  orderClose: [
+    { key: 'order_no' },
+    { key: 'out_trade_no' },
+    { key: 'subject' },
+    { key: 'amount' },
+    { key: 'pay_type_text' },
+    { key: 'order_status' },
+    { key: 'create_time' },
+    { key: 'expire_time' },
+    { key: 'operation_time' },
+    { key: 'client_ip' },
+    { key: 'notify_url' },
+    { key: 'return_url' },
+    { key: 'order_url' }
+  ]
+}
+
+const actionPlaceholderItems = [{ key: 'action_buttons' }, { key: 'confirm_button' }, { key: 'close_button' }]
+
+// 按当前邮件事件展示对应占位符，避免结果通知误出现确认/关闭操作按钮。
+const placeholderGroups = computed(() => {
+  const groups = basePlaceholderGroups.map((group) => ({
+    ...group,
+    items: group.title === '订单' ? orderPlaceholderItems[currentEvent.value.key] || [] : group.items
+  }))
+
+  if (currentEvent.value.key === 'orderNotify') {
+    groups.push({
+      title: '邮件操作',
+      items: actionPlaceholderItems
+    })
+  }
+
+  return groups.filter((group) => group.items.length > 0)
+})
 
 // 邮件配置表单数据
 const mailData = reactive({
