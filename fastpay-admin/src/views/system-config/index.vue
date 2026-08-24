@@ -6,7 +6,7 @@
         :key="item.key"
         type="button"
         class="settings-nav-item"
-        :class="{ active: activeTab === item.target, disabled: item.disabled }"
+        :class="{ active: activeTab === item.target }"
         @click="switchSettingTab(item)"
       >
         <span class="nav-icon">
@@ -19,10 +19,10 @@
     <div class="config-shell">
       <div class="mail-titlebar">
         <div class="title-left">
-          <span class="step-badge">{{ activeTab === 'mail' ? '6' : '1' }}</span>
+          <span class="step-badge">{{ currentSettingStep }}</span>
           <div>
-            <h2>{{ activeTab === 'mail' ? '邮件配置' : '系统设置' }}</h2>
-            <p>{{ activeTab === 'mail' ? '配置 SMTP 服务、测试邮件和订单邮件模板' : '配置后台与商户端展示的网站名称和署名' }}</p>
+            <h2>{{ currentSettingItem.title }}</h2>
+            <p>{{ currentSettingItem.description }}</p>
           </div>
         </div>
         <span class="permission-pill">管理员权限</span>
@@ -276,16 +276,11 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Brush,
   Connection,
-  Cpu,
-  CreditCard,
-  DataLine,
   EditPen,
   Message,
   Operation,
   Setting,
-  UploadFilled,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -311,15 +306,26 @@ const activeEditor = ref('template')
 const publicBaseUrlPlaceholder = `${window.location.origin}（留空默认当前本站域名）`
 
 const settingNavItems = [
-  { key: 'site', target: 'site', label: '系统设置', icon: Setting },
-  { key: 'creative', target: 'creative', label: '创作设置', icon: Brush, disabled: true },
-  { key: 'storage', target: 'storage', label: '存储设置', icon: UploadFilled, disabled: true },
-  { key: 'ai', target: 'ai', label: 'AI 配置', icon: Cpu, disabled: true },
-  { key: 'mail', target: 'mail', label: '邮件配置', icon: Message },
-  { key: 'switch', target: 'switch', label: '功能开关', icon: Operation, disabled: true },
-  { key: 'pay', target: 'pay', label: '支付配置', icon: CreditCard, disabled: true },
-  { key: 'backup', target: 'backup', label: '数据备份', icon: DataLine, disabled: true }
+  {
+    key: 'site',
+    target: 'site',
+    label: '系统设置',
+    title: '系统设置',
+    description: '配置后台与商户端展示的网站名称和署名',
+    icon: Setting
+  },
+  {
+    key: 'mail',
+    target: 'mail',
+    label: '邮件配置',
+    title: '邮件配置',
+    description: '配置 SMTP 服务、测试邮件和订单邮件模板',
+    icon: Message
+  }
 ]
+
+const currentSettingItem = computed(() => settingNavItems.find((item) => item.target === activeTab.value) || settingNavItems[0])
+const currentSettingStep = computed(() => settingNavItems.findIndex((item) => item.target === currentSettingItem.value.target) + 1)
 
 // 网站信息表单数据
 const brandData = reactive({
@@ -631,10 +637,6 @@ const mailRules = {
  * @param {object} item 导航项
  */
 const switchSettingTab = (item) => {
-  if (item.disabled) {
-    ElMessage.info('当前配置项暂未接入')
-    return
-  }
   activeTab.value = item.target
 }
 
@@ -871,7 +873,8 @@ onMounted(async () => {
 
 .settings-nav {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 180px));
+  justify-content: start;
   gap: 14px;
   margin-bottom: 16px;
   padding: 10px 18px;
@@ -900,11 +903,6 @@ onMounted(async () => {
     border-color: #bfdbfe;
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     box-shadow: inset 0 -2px 0 #3b82f6;
-  }
-
-  &.disabled {
-    cursor: default;
-    opacity: .75;
   }
 }
 
@@ -1322,7 +1320,7 @@ onMounted(async () => {
 
 @media (max-width: 1420px) {
   .settings-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 180px));
   }
 
   .template-grid {
