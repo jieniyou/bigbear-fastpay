@@ -262,43 +262,6 @@
               </div>
             </section>
           </div>
-
-          <aside class="mail-side">
-            <div class="status-card">
-              <div class="status-dot" :class="{ enabled: mailData.mailEnabled }">
-                <el-icon v-if="mailData.mailEnabled"><CircleCheck /></el-icon>
-                <span v-else>!</span>
-              </div>
-              <h3>{{ mailData.mailEnabled ? '邮件服务已启用' : '邮件服务未启用' }}</h3>
-              <p>{{ mailData.smtpHost || '尚未填写 SMTP 服务器' }}</p>
-              <div class="status-list">
-                <div>
-                  <span>发件名称</span>
-                  <b>{{ mailData.fromName || '-' }}</b>
-                </div>
-                <div>
-                  <span>发件邮箱</span>
-                  <b>{{ mailData.fromEmail || '-' }}</b>
-                </div>
-                <div>
-                  <span>密码状态</span>
-                  <b>{{ passwordConfigured || mailData.smtpPassword ? '已配置' : '未配置' }}</b>
-                </div>
-                <div>
-                  <span>可配置模板</span>
-                  <b>{{ mailEvents.length }} 个</b>
-                </div>
-                <div>
-                  <span>操作链接</span>
-                  <b>{{ mailData.actionTokenExpireMinutes || 30 }} 分钟</b>
-                </div>
-                <div>
-                  <span>最后更新</span>
-                  <b>保存后即时生效</b>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
       </el-form>
     </div>
@@ -314,7 +277,6 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Brush,
-  CircleCheck,
   Connection,
   Cpu,
   CreditCard,
@@ -976,28 +938,22 @@ onMounted(async () => {
 }
 
 .mail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 352px;
-  gap: 18px;
-  align-items: start;
+  width: 100%;
 }
 
 .mail-main {
   display: flex;
+  width: 100%;
   min-width: 0;
   flex-direction: column;
   gap: 18px;
 }
 
-.dark-card,
-.status-card {
+.dark-card {
   border: 1px solid #ebeef5;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 4px 16px rgba(48, 65, 86, .05);
-}
-
-.dark-card {
   padding: 24px 26px;
 }
 
@@ -1035,7 +991,7 @@ onMounted(async () => {
 .form-grid,
 .site-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   column-gap: 18px;
 }
 
@@ -1080,7 +1036,7 @@ onMounted(async () => {
 
 .event-selector-row {
   display: grid;
-  grid-template-columns: 36% minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -1120,7 +1076,7 @@ onMounted(async () => {
 
 .template-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(420px, 47%);
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
   gap: 16px;
 }
 
@@ -1226,69 +1182,6 @@ onMounted(async () => {
   background: #f5f7fa;
 }
 
-.mail-side {
-  position: sticky;
-  top: 16px;
-}
-
-.status-card {
-  padding: 26px 24px;
-
-  h3 {
-    margin: 16px 0 4px;
-    color: #303133;
-    font-size: 19px;
-  }
-
-  > p {
-    margin: 0 0 18px;
-    color: #909399;
-  }
-}
-
-.status-dot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  color: #ef6b6b;
-  background: #ffecec;
-  font-size: 28px;
-  font-weight: 900;
-
-  &.enabled {
-    color: #169f73;
-    background: #e8fff5;
-  }
-}
-
-.status-list {
-  border-top: 1px solid #ebeef5;
-
-  div {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 13px 0;
-    border-bottom: 1px solid #ebeef5;
-  }
-
-  span {
-    color: #909399;
-  }
-
-  b {
-    max-width: 180px;
-    overflow: hidden;
-    color: #303133;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
 .brand-preview {
   display: flex;
   align-items: center;
@@ -1386,13 +1279,8 @@ onMounted(async () => {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .mail-layout,
   .template-grid {
     grid-template-columns: 1fr;
-  }
-
-  .mail-side {
-    position: static;
   }
 }
 
@@ -1403,8 +1291,6 @@ onMounted(async () => {
   }
 
   .settings-nav,
-  .form-grid,
-  .site-grid,
   .event-selector-row,
   .test-row {
     grid-template-columns: 1fr;
