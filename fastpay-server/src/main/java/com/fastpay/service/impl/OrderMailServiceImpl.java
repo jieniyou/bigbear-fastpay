@@ -318,8 +318,8 @@ public class OrderMailServiceImpl implements OrderMailService {
         }
         String confirmUrl = buildActionUrl(config, order, "confirm", requestOrigin);
         String closeUrl = buildActionUrl(config, order, "close", requestOrigin);
-        String confirmButton = "<a href=\"" + escape(confirmUrl) + "\" style=\"display:inline-block;margin-right:10px;padding:10px 16px;border-radius:4px;background:#67c23a;color:#fff;text-decoration:none;\">确认收款</a>";
-        String closeButton = "<a href=\"" + escape(closeUrl) + "\" style=\"display:inline-block;padding:10px 16px;border-radius:4px;background:#f56c6c;color:#fff;text-decoration:none;\">关闭订单</a>";
+        String confirmButton = "<a href=\"" + escape(confirmUrl) + "\" style=\"display:inline-block;margin-right:10px;padding:11px 18px;border-radius:6px;background:#5968df;color:#fff;text-decoration:none;font-weight:700;\">确认收款</a>";
+        String closeButton = "<a href=\"" + escape(closeUrl) + "\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;background:#d95050;color:#fff;text-decoration:none;font-weight:700;\">关闭订单</a>";
         return new ActionLinks(confirmButton, closeButton, confirmButton + closeButton);
     }
 

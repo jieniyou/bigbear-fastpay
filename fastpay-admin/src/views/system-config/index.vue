@@ -1,26 +1,31 @@
 <template>
-  <div class="system-config-page">
-    <div class="page-header">
-      <h2>系统配置</h2>
-      <p>管理网站展示信息、SMTP 发信服务和订单邮件模板事件</p>
+  <div class="system-config-page dark-config-page">
+    <div class="settings-nav">
+      <button
+        v-for="item in settingNavItems"
+        :key="item.key"
+        type="button"
+        class="settings-nav-item"
+        :class="{ active: activeTab === item.target, disabled: item.disabled }"
+        @click="switchSettingTab(item)"
+      >
+        <span class="nav-icon">
+          <el-icon><component :is="item.icon" /></el-icon>
+        </span>
+        <span>{{ item.label }}</span>
+      </button>
     </div>
 
-    <div class="page-card config-card">
-      <div class="config-tabs">
-        <div
-          class="config-tab"
-          :class="{ active: activeTab === 'site' }"
-          @click="activeTab = 'site'"
-        >
-          网站信息
+    <div class="config-shell">
+      <div class="mail-titlebar">
+        <div class="title-left">
+          <span class="step-badge">{{ activeTab === 'mail' ? '6' : '1' }}</span>
+          <div>
+            <h2>{{ activeTab === 'mail' ? '邮件配置' : '系统设置' }}</h2>
+            <p>{{ activeTab === 'mail' ? '配置 SMTP 服务、测试邮件和订单邮件模板' : '配置后台与商户端展示的网站名称和署名' }}</p>
+          </div>
         </div>
-        <div
-          class="config-tab"
-          :class="{ active: activeTab === 'mail' }"
-          @click="activeTab = 'mail'"
-        >
-          邮件配置
-        </div>
+        <span class="permission-pill">管理员权限</span>
       </div>
 
       <el-form
@@ -29,42 +34,40 @@
         :model="brandData"
         :rules="brandRules"
         label-position="top"
-        class="config-form"
+        class="config-form site-form"
       >
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <div class="dark-card site-card">
+          <div class="section-heading">
+            <span class="card-icon"><el-icon><Setting /></el-icon></span>
+            <div>
+              <h3>网站信息</h3>
+              <p>用于后台、商户端、浏览器标题和页脚展示。</p>
+            </div>
+          </div>
+
+          <div class="site-grid">
             <el-form-item label="网站名称" prop="siteName">
               <el-input v-model="brandData.siteName" placeholder="请输入网站名称" maxlength="50" show-word-limit />
-              <div class="form-tip">用于后台、商户端、浏览器标题等位置展示。</div>
             </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="网站署名" prop="siteAuthor">
               <el-input v-model="brandData.siteAuthor" placeholder="请输入署名，例如 xxx" maxlength="50" show-word-limit />
-              <div class="form-tip">侧边栏和页脚会显示为：by {{ brandData.siteAuthor || 'xxx' }}</div>
             </el-form-item>
-          </el-col>
-        </el-row>
+          </div>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="展示预览">
-              <div class="brand-preview">
-                <div class="preview-logo">易</div>
-                <div>
-                  <div class="preview-name">{{ brandData.siteName || '网站名称' }}</div>
-                  <div class="preview-author">by {{ brandData.siteAuthor || 'xxx' }}</div>
-                </div>
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+          <div class="brand-preview">
+            <div class="preview-logo">易</div>
+            <div>
+              <div class="preview-name">{{ brandData.siteName || '网站名称' }}</div>
+              <div class="preview-author">by {{ brandData.siteAuthor || 'xxx' }}</div>
+            </div>
+          </div>
 
-        <div class="form-actions">
-          <el-button @click="loadBrandData">重置</el-button>
-          <el-button type="primary" :loading="brandSaving" @click="handleSaveBrand">
-            保存配置
-          </el-button>
+          <div class="card-actions">
+            <el-button @click="loadBrandData">重置</el-button>
+            <el-button type="primary" :loading="brandSaving" @click="handleSaveBrand">
+              保存系统设置
+            </el-button>
+          </div>
         </div>
       </el-form>
 
@@ -76,62 +79,57 @@
         label-position="top"
         class="config-form mail-config-form"
       >
-        <div class="mail-top-grid">
-          <div class="config-section smtp-card">
-            <div class="section-header">
-              <div>
-                <div class="section-kicker">SMTP</div>
-                <h3>邮件服务</h3>
-                <p>用于订单通知、确认通知和关闭通知。</p>
+        <div class="mail-layout">
+          <div class="mail-main">
+            <section class="dark-card smtp-card">
+              <div class="section-heading">
+                <span class="card-icon"><el-icon><Message /></el-icon></span>
+                <div>
+                  <h3>SMTP 邮件服务</h3>
+                  <p>用于注册验证、订单通知、订单确认和订单关闭结果通知。</p>
+                </div>
+                <el-switch v-model="mailData.mailEnabled" active-text="已启用" inactive-text="已停用" />
               </div>
-              <el-switch v-model="mailData.mailEnabled" active-text="启用" inactive-text="停用" />
-            </div>
 
-            <el-row :gutter="18">
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="SMTP服务器" prop="smtpHost">
-                  <el-input v-model="mailData.smtpHost" placeholder="例如 smtp.qq.com" />
+              <div class="form-grid">
+                <el-form-item label="SMTP 服务器" prop="smtpHost">
+                  <el-input v-model="mailData.smtpHost" placeholder="smtp.qq.com" />
                 </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="SMTP端口" prop="smtpPort">
+                <el-form-item label="端口" prop="smtpPort">
                   <el-input-number v-model="mailData.smtpPort" :min="1" :max="65535" class="full-number" />
                 </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="SMTP登录账号" prop="smtpUsername">
-                  <el-input v-model="mailData.smtpUsername" placeholder="通常为发件邮箱或邮箱账号" />
+                <el-form-item label="SMTP 登录账号" prop="smtpUsername">
+                  <el-input v-model="mailData.smtpUsername" placeholder="xiaomin.summer@qq.com" />
                   <div class="form-tip">只用于 SMTP 服务身份认证。</div>
                 </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="SMTP密码" prop="smtpPassword">
+                <el-form-item label="发件邮箱" prop="fromEmail">
+                  <el-input v-model="mailData.fromEmail" placeholder="notice@example.com" />
+                  <div class="form-tip">收件人实际看到的 From 地址。</div>
+                </el-form-item>
+                <el-form-item label="发件名称" prop="fromName">
+                  <el-input v-model="mailData.fromName" placeholder="FAST 易支付" />
+                  <div class="form-tip">用于替代邮箱账号展示在收件箱列表中。</div>
+                </el-form-item>
+                <el-form-item label="SMTP 密码" prop="smtpPassword">
                   <el-input
                     v-model="mailData.smtpPassword"
                     type="password"
                     show-password
-                    :placeholder="passwordConfigured ? '留空则保持当前密码' : '请输入SMTP授权码或密码'"
+                    :placeholder="passwordConfigured ? '已配置，留空则保持当前密码' : '请输入SMTP授权码或密码'"
                   />
-                  <div v-if="passwordConfigured" class="form-tip">当前已保存密码，重新输入才会覆盖。</div>
+                  <div class="form-tip">留空会保留当前已保存的密码或授权码。</div>
                 </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="发件邮箱" prop="fromEmail">
-                  <el-input v-model="mailData.fromEmail" placeholder="例如 notice@example.com" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="发件名称" prop="fromName">
-                  <el-input v-model="mailData.fromName" placeholder="例如 FAST 易支付" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="使用 SSL" prop="sslEnabled">
-                  <el-switch v-model="mailData.sslEnabled" active-text="SSL" inactive-text="普通" />
-                  <div class="form-tip">常见 SSL 端口为 465，STARTTLS 通常使用 587。</div>
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
+              </div>
+
+              <div class="ssl-row">
+                <div>
+                  <strong>使用 SSL</strong>
+                  <p>适用于 465 等直接建立 SSL 连接的端口；关闭时通常使用 STARTTLS。</p>
+                </div>
+                <el-switch v-model="mailData.sslEnabled" />
+              </div>
+
+              <div class="form-grid bottom-grid">
                 <el-form-item label="操作链接有效期" prop="actionTokenExpireMinutes">
                   <el-input-number
                     v-model="mailData.actionTokenExpireMinutes"
@@ -142,20 +140,134 @@
                   />
                   <div class="form-tip">单位：分钟，确认/关闭按钮使用一次后会失效。</div>
                 </el-form-item>
-              </el-col>
-              <el-col :span="24">
                 <el-form-item label="平台外部访问地址" prop="publicBaseUrl">
                   <el-input v-model="mailData.publicBaseUrl" :placeholder="publicBaseUrlPlaceholder" />
-                  <div class="form-tip">可留空。留空时按当前访问域名生成邮件链接；若使用反向代理，请保证 Host、X-Forwarded-Proto 透传正确。</div>
+                  <div class="form-tip">可留空。留空时按当前访问域名生成邮件链接。</div>
                 </el-form-item>
-              </el-col>
-            </el-row>
+              </div>
+
+              <div class="card-actions">
+                <el-button type="primary" :loading="mailSaving" @click="handleSaveMail">
+                  保存邮件服务
+                </el-button>
+              </div>
+            </section>
+
+            <section class="dark-card test-card">
+              <div class="section-heading compact">
+                <span class="card-icon"><el-icon><Connection /></el-icon></span>
+                <div>
+                  <h3>发送测试邮件</h3>
+                  <p>使用已保存的 SMTP 配置验证发信能力。</p>
+                </div>
+              </div>
+              <div class="test-row">
+                <el-input v-model="testData.testEmail" placeholder="请输入实际接收测试邮件的邮箱" />
+                <el-button type="primary" :loading="testSending" @click="handleSendTestMail">
+                  发送测试邮件
+                </el-button>
+              </div>
+            </section>
+
+            <section class="dark-card template-card">
+              <div class="section-heading">
+                <span class="card-icon"><el-icon><Operation /></el-icon></span>
+                <div>
+                  <h3>邮件模板</h3>
+                  <p>按真实业务事件自定义主题和 HTML，保存后立即用于发送。</p>
+                </div>
+                <div class="template-actions">
+                  <el-button @click="resetCurrentTemplate">恢复默认</el-button>
+                  <el-button type="primary" :loading="mailSaving" @click="handleSaveMail">
+                    保存模板
+                  </el-button>
+                </div>
+              </div>
+
+              <div class="event-selector-row">
+                <div class="event-select-field">
+                  <label>邮件事件</label>
+                  <el-select v-model="selectedEventKey" class="event-select">
+                    <el-option
+                      v-for="item in mailEvents"
+                      :key="item.key"
+                      :label="item.label"
+                      :value="item.key"
+                    />
+                  </el-select>
+                </div>
+                <div class="event-desc-card">
+                  <div class="event-desc-title">
+                    <span>{{ currentEvent.label }}</span>
+                    <el-switch v-model="mailData[currentEvent.enabledKey]" active-text="启用" inactive-text="停用" />
+                  </div>
+                  <p>{{ currentEvent.description }}</p>
+                </div>
+              </div>
+
+              <el-form-item label="邮件主题">
+                <el-input
+                  ref="subjectInputRef"
+                  v-model="mailData[currentEvent.subjectKey]"
+                  placeholder="请输入邮件主题，可使用占位符"
+                  @focus="activeEditor = 'subject'"
+                />
+              </el-form-item>
+
+              <div class="template-grid">
+                <div class="template-editor-panel">
+                  <div class="panel-bar">
+                    <span class="bar-label"><el-icon><EditPen /></el-icon> HTML 模板</span>
+                    <em>{{ currentTemplateLength }} / 30,000</em>
+                  </div>
+                  <el-input
+                    ref="templateInputRef"
+                    v-model="mailData[currentEvent.templateKey]"
+                    type="textarea"
+                    :rows="20"
+                    resize="vertical"
+                    class="html-editor"
+                    placeholder="请输入 HTML 模板，可使用占位符"
+                    @focus="activeEditor = 'template'"
+                  />
+                  <div class="placeholder-strip">
+                    <div>
+                      <strong>可用占位符</strong>
+                      <p>点击后插入到最近聚焦的字段，发送时由后端安全替换。</p>
+                    </div>
+                    <div class="placeholder-groups">
+                      <div v-for="group in placeholderGroups" :key="group.title" class="placeholder-group">
+                        <span class="group-title">{{ group.title }}</span>
+                        <button
+                          v-for="item in group.items"
+                          :key="item.key"
+                          type="button"
+                          class="placeholder-chip"
+                          @click="insertPlaceholder(item.key)"
+                        >
+                          <span v-text="formatPlaceholder(item.key)" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="preview-panel">
+                  <div class="panel-bar">
+                    <span class="bar-label"><el-icon><View /></el-icon> 实时预览</span>
+                    <em>{{ previewSubject || currentEvent.label }}</em>
+                  </div>
+                  <iframe class="preview-frame" :srcdoc="previewHtml" sandbox="" />
+                </div>
+              </div>
+            </section>
           </div>
 
-          <div class="mail-side">
+          <aside class="mail-side">
             <div class="status-card">
               <div class="status-dot" :class="{ enabled: mailData.mailEnabled }">
-                {{ mailData.mailEnabled ? '✓' : '!' }}
+                <el-icon v-if="mailData.mailEnabled"><CircleCheck /></el-icon>
+                <span v-else>!</span>
               </div>
               <h3>{{ mailData.mailEnabled ? '邮件服务已启用' : '邮件服务未启用' }}</h3>
               <p>{{ mailData.smtpHost || '尚未填写 SMTP 服务器' }}</p>
@@ -173,122 +285,20 @@
                   <b>{{ passwordConfigured || mailData.smtpPassword ? '已配置' : '未配置' }}</b>
                 </div>
                 <div>
-                  <span>邮件事件</span>
-                  <b>{{ enabledEventCount }} / {{ mailEvents.length }}</b>
+                  <span>可配置模板</span>
+                  <b>{{ mailEvents.length }} 个</b>
                 </div>
-              </div>
-            </div>
-
-            <div class="test-panel">
-              <div class="test-title">发送测试邮件</div>
-              <p>使用上方当前配置验证 SMTP，保存前也可以测试。</p>
-              <div class="test-row">
-                <el-input v-model="testData.testEmail" placeholder="请输入测试收件邮箱" />
-                <el-button :loading="testSending" @click="handleSendTestMail">发送测试</el-button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="config-section event-section">
-          <div class="section-header compact">
-            <div>
-              <div class="section-kicker">Template Events</div>
-              <h3>邮件事件模板</h3>
-              <p>每个事件独立配置邮件主题和 HTML 模板，右侧实时预览渲染效果。</p>
-            </div>
-            <el-button @click="resetCurrentTemplate">恢复当前事件默认模板</el-button>
-          </div>
-
-          <div class="event-workbench">
-            <div class="event-sidebar">
-              <button
-                v-for="item in mailEvents"
-                :key="item.key"
-                type="button"
-                class="event-tab-button"
-                :class="{ active: selectedEventKey === item.key }"
-                @click="selectedEventKey = item.key"
-              >
-                <span>{{ item.label }}</span>
-                <small>{{ item.description }}</small>
-              </button>
-            </div>
-
-            <div class="event-editor">
-              <div class="event-editor-head">
                 <div>
-                  <h4>{{ currentEvent.label }}</h4>
-                  <p>{{ currentEvent.description }}</p>
+                  <span>操作链接</span>
+                  <b>{{ mailData.actionTokenExpireMinutes || 30 }} 分钟</b>
                 </div>
-                <el-switch v-model="mailData[currentEvent.enabledKey]" active-text="启用" inactive-text="停用" />
-              </div>
-
-              <el-form-item label="邮件主题">
-                <el-input
-                  ref="subjectInputRef"
-                  v-model="mailData[currentEvent.subjectKey]"
-                  placeholder="请输入邮件主题，可使用占位符"
-                  @focus="activeEditor = 'subject'"
-                />
-              </el-form-item>
-
-              <el-form-item label="HTML模板">
-                <el-input
-                  ref="templateInputRef"
-                  v-model="mailData[currentEvent.templateKey]"
-                  type="textarea"
-                  :autosize="{ minRows: 14, maxRows: 22 }"
-                  placeholder="请输入 HTML 模板，可使用占位符"
-                  @focus="activeEditor = 'template'"
-                />
-                <div class="form-tip">
-                  订单通知模板中写入 {{ actionPlaceholderText }}、{{ confirmPlaceholderText }} 或 {{ closePlaceholderText }} 时，系统会自动生成单次确认/关闭链接。
+                <div>
+                  <span>最后更新</span>
+                  <b>保存后即时生效</b>
                 </div>
-              </el-form-item>
-            </div>
-
-            <div class="preview-pane">
-              <div class="placeholder-panel">
-                <div class="placeholder-head">
-                  <b>占位符</b>
-                  <p>点击插入到当前{{ activeEditor === 'subject' ? '邮件主题' : 'HTML模板' }}</p>
-                </div>
-                <div
-                  v-for="group in placeholderGroups"
-                  :key="group.title"
-                  class="placeholder-group"
-                >
-                  <div class="placeholder-group-title">{{ group.title }}</div>
-                  <button
-                    v-for="item in group.items"
-                    :key="item.key"
-                    type="button"
-                    class="placeholder-chip"
-                    @click="insertPlaceholder(item.key)"
-                  >
-                    <span v-text="formatPlaceholder(item.key)" />
-                  </button>
-                </div>
-              </div>
-
-              <div class="email-preview">
-                <div class="preview-bar">
-                  <span>实时预览</span>
-                  <small>{{ currentEvent.label }}</small>
-                </div>
-                <div class="preview-subject">{{ previewSubject || '邮件主题预览' }}</div>
-                <div class="preview-body" v-html="previewHtml"></div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div class="form-actions sticky-actions">
-          <el-button @click="loadMailData">重置</el-button>
-          <el-button type="primary" :loading="mailSaving" @click="handleSaveMail">
-            保存邮件配置
-          </el-button>
+          </aside>
         </div>
       </el-form>
     </div>
@@ -303,6 +313,20 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
+  Brush,
+  CircleCheck,
+  Connection,
+  Cpu,
+  CreditCard,
+  DataLine,
+  EditPen,
+  Message,
+  Operation,
+  Setting,
+  UploadFilled,
+  View
+} from '@element-plus/icons-vue'
+import {
   getAdminBrandConfig,
   getMailConfig,
   sendTestMail,
@@ -311,7 +335,7 @@ import {
 } from '@/api'
 import { notifyBrandConfigUpdated } from '@/utils/brand'
 
-const activeTab = ref('site')
+const activeTab = ref('mail')
 const brandFormRef = ref()
 const mailFormRef = ref()
 const subjectInputRef = ref()
@@ -323,9 +347,17 @@ const passwordConfigured = ref(false)
 const selectedEventKey = ref('orderNotify')
 const activeEditor = ref('template')
 const publicBaseUrlPlaceholder = `${window.location.origin}（留空默认当前本站域名）`
-const actionPlaceholderText = '{{action_buttons}}'
-const confirmPlaceholderText = '{{confirm_button}}'
-const closePlaceholderText = '{{close_button}}'
+
+const settingNavItems = [
+  { key: 'site', target: 'site', label: '系统设置', icon: Setting },
+  { key: 'creative', target: 'creative', label: '创作设置', icon: Brush, disabled: true },
+  { key: 'storage', target: 'storage', label: '存储设置', icon: UploadFilled, disabled: true },
+  { key: 'ai', target: 'ai', label: 'AI 配置', icon: Cpu, disabled: true },
+  { key: 'mail', target: 'mail', label: '邮件配置', icon: Message },
+  { key: 'switch', target: 'switch', label: '功能开关', icon: Operation, disabled: true },
+  { key: 'pay', target: 'pay', label: '支付配置', icon: CreditCard, disabled: true },
+  { key: 'backup', target: 'backup', label: '数据备份', icon: DataLine, disabled: true }
+]
 
 // 网站信息表单数据
 const brandData = reactive({
@@ -333,54 +365,103 @@ const brandData = reactive({
   siteAuthor: ''
 })
 
+/**
+ * 构建邮件基础壳。
+ *
+ * @param {string} title 标题
+ * @param {string} contentHtml 正文 HTML
+ * @returns {string} 完整邮件 HTML
+ */
+const buildMailShell = (title, contentHtml) => {
+  return `<!doctype html>
+<html>
+<body style="margin:0;padding:24px;background:#f3f5fa;font-family:Arial,'Microsoft YaHei',sans-serif;color:#252a3a;">
+  <div style="max-width:640px;margin:0 auto;overflow:hidden;border:1px solid #e2e5ef;border-radius:10px;background:#ffffff;box-shadow:0 12px 34px rgba(35,42,72,.10);">
+    <div style="padding:24px 28px;color:#ffffff;background:#5968df;">
+      <div style="font-size:13px;opacity:.82;">{{site_name}}</div>
+      <h1 style="margin:7px 0 0;font-size:24px;line-height:1.35;">${title}</h1>
+    </div>
+    <div style="padding:28px;font-size:15px;line-height:1.8;">
+${contentHtml}
+    </div>
+    <div style="padding:16px 28px;border-top:1px solid #eceef4;color:#9298a8;background:#fafbfc;font-size:12px;">
+      此邮件由 {{site_name}} 系统自动发送，请勿直接回复。{{author_text}}
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+/**
+ * 构建订单通知默认模板。
+ *
+ * @returns {string} 订单通知模板
+ */
+const buildOrderNoticeTemplate = () => buildMailShell('新订单通知', `      <p style="margin:0 0 18px;">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 收到一笔待确认订单。</p>
+      <div style="margin:18px 0;padding:18px;border-radius:8px;color:#5968df;background:#f0f2ff;text-align:center;">
+        <div style="font-size:13px;color:#70778a;">订单金额</div>
+        <div style="font-size:32px;font-weight:700;letter-spacing:1px;">¥{{amount}}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">平台订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;"><b>{{order_no}}</b></td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商户订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{out_trade_no}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商品名称</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{subject}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">支付类型</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{pay_type_text}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">创建时间</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{create_time}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;">过期时间</td><td style="padding:10px 0;">{{expire_time}}</td></tr>
+      </table>
+      <div style="margin:24px 0 8px;">{{action_buttons}}</div>
+      <p style="margin:14px 0 0;color:#9298a8;font-size:13px;">确认/关闭按钮为短时效单次操作链接，任意一个按钮使用后同订单其它按钮会失效。</p>`)
+
+/**
+ * 构建订单确认默认模板。
+ *
+ * @returns {string} 订单确认模板
+ */
+const buildOrderConfirmTemplate = () => buildMailShell('订单确认成功', `      <p style="margin:0 0 18px;">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 订单已确认收款。</p>
+      <div style="margin:18px 0;padding:18px;border-radius:8px;color:#1b9468;background:#eaf8f1;text-align:center;">
+        <div style="font-size:13px;color:#60776c;">确认金额</div>
+        <div style="font-size:32px;font-weight:700;letter-spacing:1px;">¥{{pay_amount}}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">平台订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;"><b>{{order_no}}</b></td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商户订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{out_trade_no}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商品名称</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{subject}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;">确认时间</td><td style="padding:10px 0;">{{pay_time}}</td></tr>
+      </table>
+      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;">查看订单</a></p>`)
+
+/**
+ * 构建订单关闭默认模板。
+ *
+ * @returns {string} 订单关闭模板
+ */
+const buildOrderCloseTemplate = () => buildMailShell('订单已关闭', `      <p style="margin:0 0 18px;">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 订单已关闭。</p>
+      <div style="margin:18px 0;padding:18px;border-radius:8px;color:#d95050;background:#fff0f0;text-align:center;">
+        <div style="font-size:13px;color:#8f6a6a;">订单金额</div>
+        <div style="font-size:32px;font-weight:700;letter-spacing:1px;">¥{{amount}}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">平台订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;"><b>{{order_no}}</b></td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商户订单号</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{out_trade_no}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;">商品名称</td><td style="padding:10px 0;border-bottom:1px solid #eceef4;">{{subject}}</td></tr>
+        <tr><td style="padding:10px 0;color:#70778a;">关闭时间</td><td style="padding:10px 0;">{{operation_time}}</td></tr>
+      </table>
+      <p style="margin:24px 0 0;"><a href="{{order_url}}" style="display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;">查看订单</a></p>`)
+
 // 邮件事件默认模板
 const defaultTemplates = {
   orderNotify: {
     subject: '【{{site_name}}】新订单通知：{{order_no}}',
-    template: `<div style="font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;">
-  <h2 style="margin:0 0 8px;">{{site_name}} 新订单通知</h2>
-  <p style="margin:0 0 16px;color:#606266;">商户 {{merchant_name}} 的店铺 {{shop_name}} 收到一笔待确认订单。</p>
-  <table style="border-collapse:collapse;width:100%;font-size:14px;">
-    <tr><td style="width:130px;padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">平台订单号</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{order_no}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">商户订单号</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{out_trade_no}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">店铺</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{shop_name}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">商品名称</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{subject}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">订单金额</td><td style="padding:9px 12px;border:1px solid #ebeef5;">¥{{amount}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">支付类型</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{pay_type_text}}</td></tr>
-    <tr><td style="padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;">创建时间</td><td style="padding:9px 12px;border:1px solid #ebeef5;">{{create_time}}</td></tr>
-  </table>
-  <div style="margin:22px 0;">{{action_buttons}}</div>
-  <p style="margin:0;color:#909399;font-size:13px;">确认/关闭按钮为短时效单次操作链接，任意一个按钮使用后同订单其它按钮会失效。</p>
-  <p style="margin:12px 0 0;color:#909399;font-size:13px;">{{author_text}}</p>
-</div>`
+    template: buildOrderNoticeTemplate()
   },
   orderConfirm: {
     subject: '【{{site_name}}】订单确认成功：{{order_no}}',
-    template: `<div style="font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;">
-  <h2 style="margin:0 0 8px;">订单确认成功</h2>
-  <p style="margin:0 0 16px;color:#606266;">商户 {{merchant_name}} 的店铺 {{shop_name}} 订单已确认收款。</p>
-  <p>平台订单号：<b>{{order_no}}</b></p>
-  <p>商户订单号：{{out_trade_no}}</p>
-  <p>商品名称：{{subject}}</p>
-  <p>确认金额：<b>¥{{pay_amount}}</b></p>
-  <p>确认时间：{{pay_time}}</p>
-  <p><a href="{{order_url}}" style="display:inline-block;padding:10px 16px;border-radius:4px;background:#409eff;color:#fff;text-decoration:none;">查看订单</a></p>
-  <p style="margin:12px 0 0;color:#909399;font-size:13px;">{{author_text}}</p>
-</div>`
+    template: buildOrderConfirmTemplate()
   },
   orderClose: {
     subject: '【{{site_name}}】订单已关闭：{{order_no}}',
-    template: `<div style="font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;">
-  <h2 style="margin:0 0 8px;">订单已关闭</h2>
-  <p style="margin:0 0 16px;color:#606266;">商户 {{merchant_name}} 的店铺 {{shop_name}} 订单已关闭。</p>
-  <p>平台订单号：<b>{{order_no}}</b></p>
-  <p>商户订单号：{{out_trade_no}}</p>
-  <p>商品名称：{{subject}}</p>
-  <p>订单金额：<b>¥{{amount}}</b></p>
-  <p>关闭时间：{{operation_time}}</p>
-  <p><a href="{{order_url}}" style="display:inline-block;padding:10px 16px;border-radius:4px;background:#409eff;color:#fff;text-decoration:none;">查看订单</a></p>
-  <p style="margin:12px 0 0;color:#909399;font-size:13px;">{{author_text}}</p>
-</div>`
+    template: buildOrderCloseTemplate()
   }
 }
 
@@ -504,9 +585,9 @@ const sampleValues = computed(() => ({
 }))
 
 const currentEvent = computed(() => mailEvents.find((item) => item.key === selectedEventKey.value) || mailEvents[0])
-const enabledEventCount = computed(() => mailEvents.filter((item) => mailData[item.enabledKey]).length)
 const previewSubject = computed(() => renderTemplate(mailData[currentEvent.value.subjectKey] || ''))
 const previewHtml = computed(() => renderTemplate(mailData[currentEvent.value.templateKey] || '<p>HTML 模板预览</p>', true))
+const currentTemplateLength = computed(() => String(mailData[currentEvent.value.templateKey] || '').length)
 
 // 网站信息校验规则
 const brandRules = {
@@ -534,6 +615,19 @@ const mailRules = {
   ],
   smtpPort: [{ required: true, message: '请输入SMTP端口', trigger: 'blur' }],
   actionTokenExpireMinutes: [{ required: true, message: '请输入操作链接有效期', trigger: 'blur' }]
+}
+
+/**
+ * 切换配置导航。
+ *
+ * @param {object} item 导航项
+ */
+const switchSettingTab = (item) => {
+  if (item.disabled) {
+    ElMessage.info('当前配置项暂未接入')
+    return
+  }
+  activeTab.value = item.target
 }
 
 /**
@@ -732,7 +826,7 @@ const formatPlaceholder = (key) => {
  * @returns {string} 确认按钮 HTML
  */
 const sampleConfirmButton = () => {
-  return '<a href="#" style="display:inline-block;margin-right:10px;padding:10px 16px;border-radius:4px;background:#67c23a;color:#fff;text-decoration:none;">确认收款</a>'
+  return '<a href="#" style="display:inline-block;margin-right:10px;padding:11px 18px;border-radius:6px;background:#5968df;color:#fff;text-decoration:none;font-weight:700;">确认收款</a>'
 }
 
 /**
@@ -741,7 +835,7 @@ const sampleConfirmButton = () => {
  * @returns {string} 关闭按钮 HTML
  */
 const sampleCloseButton = () => {
-  return '<a href="#" style="display:inline-block;padding:10px 16px;border-radius:4px;background:#f56c6c;color:#fff;text-decoration:none;">关闭订单</a>'
+  return '<a href="#" style="display:inline-block;padding:11px 18px;border-radius:6px;background:#d95050;color:#fff;text-decoration:none;font-weight:700;">关闭订单</a>'
 }
 
 /**
@@ -760,127 +854,392 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.system-config-page {
-  .page-header {
-    margin-bottom: 20px;
-
-    h2 {
-      margin: 0 0 8px;
-      font-size: 24px;
-      color: #303133;
-    }
-
-    p {
-      margin: 0;
-      color: #909399;
-    }
-  }
+.dark-config-page {
+  min-height: calc(100vh - 120px);
+  padding: 14px;
+  color: #dce5ff;
+  background: #0d1424;
 }
 
-.config-card {
-  padding: 0;
+.settings-nav {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 10px 18px;
+  border: 1px solid #26324c;
+  border-radius: 8px;
+  background: #111a2c;
 }
 
-.config-tabs {
+.settings-nav-item {
   display: flex;
-  gap: 28px;
-  padding: 0 24px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.config-tab {
-  padding: 18px 0 14px;
-  color: #606266;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #aeb9d8;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
 
   &.active {
-    color: #409eff;
-    border-bottom: 2px solid #409eff;
+    color: #f2f5ff;
+    border-color: #34436b;
+    background: #252f50;
+    box-shadow: inset 0 -2px 0 #7868ff;
   }
+
+  &.disabled {
+    cursor: default;
+    opacity: .75;
+  }
+}
+
+.nav-icon,
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #dfe5ff;
+  background: #25305a;
+  font-size: 16px;
+  font-weight: 800;
+
+  .el-icon {
+    font-size: 18px;
+  }
+}
+
+.config-shell {
+  overflow: hidden;
+  border: 1px solid #26324c;
+  border-radius: 8px;
+  background: #111827;
+}
+
+.mail-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px;
+  border-bottom: 1px solid #26324c;
+  background: #121b2d;
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    color: #f5f7ff;
+    font-size: 22px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: #8795b8;
+    font-size: 13px;
+  }
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  color: #fff;
+  background: #665ff0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.permission-pill {
+  color: #7c8cff;
+  font-size: 13px;
 }
 
 .config-form {
-  padding: 24px;
+  padding: 22px;
 }
 
-.mail-config-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.mail-top-grid {
+.mail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 352px;
+  gap: 18px;
   align-items: start;
 }
 
-.config-section,
-.status-card,
-.test-panel {
-  border: 1px solid #ebeef5;
+.mail-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dark-card,
+.status-card {
+  border: 1px solid #26324c;
   border-radius: 8px;
-  background: #fff;
+  background: #121b2d;
 }
 
-.config-section {
-  padding: 20px 22px;
+.dark-card {
+  padding: 24px 26px;
 }
 
-.section-header {
+.section-heading {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #2a3652;
 
   h3 {
-    margin: 2px 0 4px;
-    font-size: 18px;
-    color: #303133;
+    margin: 0;
+    color: #f5f7ff;
+    font-size: 20px;
   }
 
   p {
-    margin: 0;
-    color: #909399;
+    margin: 4px 0 0;
+    color: #8795b8;
     font-size: 13px;
+  }
+
+  :deep(.el-switch) {
+    margin-left: auto;
   }
 
   &.compact {
-    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 }
 
-.section-kicker {
-  color: #409eff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+.form-grid,
+.site-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
 }
 
-.mail-side {
+.bottom-grid {
+  margin-top: 18px;
+}
+
+.ssl-row {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 12px;
+  padding: 18px 0;
+  border-top: 1px solid #2a3652;
+  border-bottom: 1px solid #2a3652;
 
-.status-card {
-  padding: 20px;
-
-  h3 {
-    margin: 12px 0 4px;
-    color: #303133;
-    font-size: 16px;
+  strong {
+    color: #f5f7ff;
+    font-size: 15px;
   }
 
   p {
-    margin: 0 0 16px;
-    color: #909399;
+    margin: 5px 0 0;
+    color: #8795b8;
     font-size: 13px;
+  }
+}
+
+.card-actions,
+.template-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.test-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 12px;
+}
+
+.event-selector-row {
+  display: grid;
+  grid-template-columns: 36% minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.event-select-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #cbd6f4;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.event-select {
+  width: 100%;
+}
+
+.event-desc-card {
+  padding: 12px 16px;
+  border-left: 3px solid #7466ff;
+  background: #1a2438;
+
+  p {
+    margin: 6px 0 0;
+    color: #8795b8;
+    font-size: 13px;
+  }
+}
+
+.event-desc-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #f5f7ff;
+  font-weight: 700;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 47%);
+  gap: 16px;
+}
+
+.template-editor-panel,
+.preview-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #2a3652;
+  border-radius: 8px;
+  background: #0e1626;
+}
+
+.panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #2a3652;
+  color: #cfd8f4;
+  background: #1a2438;
+  font-weight: 800;
+
+  em {
+    overflow: hidden;
+    color: #8795b8;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.html-editor {
+  :deep(.el-textarea__inner) {
+    min-height: 520px !important;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #0e1626;
+    color: #dce5ff;
+    font-family: Consolas, 'Courier New', monospace;
+    line-height: 1.7;
+  }
+}
+
+.placeholder-strip {
+  padding: 14px 16px;
+  border-top: 1px solid #2a3652;
+
+  strong {
+    color: #f5f7ff;
+  }
+
+  p {
+    margin: 4px 0 12px;
+    color: #8795b8;
+    font-size: 12px;
+  }
+}
+
+.placeholder-group {
+  margin-top: 10px;
+}
+
+.group-title {
+  display: inline-block;
+  min-width: 72px;
+  color: #8795b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.placeholder-chip {
+  margin: 0 6px 8px 0;
+  padding: 7px 10px;
+  border: 1px solid #354369;
+  border-radius: 6px;
+  color: #dce5ff;
+  background: #25305a;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #7466ff;
+    color: #fff;
+    background: #34306f;
+  }
+}
+
+.preview-frame {
+  display: block;
+  width: 100%;
+  min-height: 662px;
+  border: 0;
+  background: #f3f5fa;
+}
+
+.mail-side {
+  position: sticky;
+  top: 16px;
+}
+
+.status-card {
+  padding: 26px 24px;
+
+  h3 {
+    margin: 16px 0 4px;
+    color: #f5f7ff;
+    font-size: 19px;
+  }
+
+  > p {
+    margin: 0 0 18px;
+    color: #8795b8;
   }
 }
 
@@ -888,315 +1247,168 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 74px;
+  height: 74px;
   border-radius: 50%;
-  color: #fff;
-  background: #f56c6c;
-  font-weight: 700;
+  color: #ef6b6b;
+  background: #ffecec;
+  font-size: 28px;
+  font-weight: 900;
 
   &.enabled {
-    background: #67c23a;
+    color: #169f73;
+    background: #e8fff5;
   }
 }
 
 .status-list {
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid #2a3652;
 
   div {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #ebeef5;
-    font-size: 13px;
+    gap: 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid #2a3652;
   }
 
   span {
-    color: #909399;
+    color: #8795b8;
   }
 
   b {
-    max-width: 150px;
+    max-width: 180px;
     overflow: hidden;
-    color: #303133;
+    color: #dce5ff;
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 }
 
-.test-panel {
-  padding: 16px;
-  background: #f5faff;
-  border-color: #c6e2ff;
-
-  p {
-    margin: 0 0 12px;
-    color: #909399;
-    font-size: 12px;
-  }
-}
-
-.test-title {
-  margin-bottom: 4px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.test-row {
-  display: flex;
-  gap: 10px;
-}
-
-.event-workbench {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 360px;
-  gap: 16px;
-}
-
-.event-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.event-tab-button {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #606266;
-  text-align: left;
-  cursor: pointer;
-
-  span {
-    display: block;
-    margin-bottom: 6px;
-    color: #303133;
-    font-weight: 600;
-  }
-
-  small {
-    color: #909399;
-    line-height: 1.5;
-  }
-
-  &.active {
-    border-color: #409eff;
-    background: #ecf5ff;
-
-    span {
-      color: #409eff;
-    }
-  }
-}
-
-.event-editor {
-  min-width: 0;
-}
-
-.event-editor-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-
-  h4 {
-    margin: 0 0 4px;
-    color: #303133;
-    font-size: 16px;
-  }
-
-  p {
-    margin: 0;
-    color: #909399;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-}
-
-.preview-pane {
-  min-width: 0;
-}
-
-.placeholder-panel,
-.email-preview {
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.placeholder-panel {
-  margin-bottom: 14px;
-  padding: 14px;
-}
-
-.placeholder-head {
-  margin-bottom: 10px;
-
-  p {
-    margin: 4px 0 0;
-    color: #909399;
-    font-size: 12px;
-  }
-}
-
-.placeholder-group {
-  margin-top: 12px;
-}
-
-.placeholder-group-title {
-  margin-bottom: 8px;
-  color: #606266;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.placeholder-chip {
-  margin: 0 6px 6px 0;
-  padding: 6px 8px;
-  border: 1px solid #dcdfe6;
-  border-radius: 6px;
-  background: #f8fafc;
-  color: #606266;
-  font-size: 12px;
-  cursor: pointer;
-
-  &:hover {
-    color: #409eff;
-    border-color: #409eff;
-    background: #ecf5ff;
-  }
-}
-
-.email-preview {
-  overflow: hidden;
-}
-
-.preview-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid #ebeef5;
-  background: #f8fafc;
-  color: #606266;
-  font-size: 13px;
-
-  small {
-    color: #909399;
-  }
-}
-
-.preview-subject {
-  padding: 12px 14px;
-  border-bottom: 1px solid #ebeef5;
-  color: #303133;
-  font-weight: 600;
-  word-break: break-word;
-}
-
-.preview-body {
-  min-height: 280px;
-  max-height: 460px;
-  padding: 16px;
-  overflow: auto;
-  background: #fff;
-  color: #303133;
-  word-break: break-word;
-}
-
-.form-tip {
-  margin-top: 6px;
-  color: #909399;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .brand-preview {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 72px;
-  padding: 16px;
-  border: 1px solid #ebeef5;
+  margin-top: 8px;
+  padding: 18px;
+  border: 1px solid #2a3652;
   border-radius: 8px;
-  background: #f8fafc;
+  background: #0e1626;
 }
 
 .preview-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   color: #fff;
-  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #5968df, #7b5ff2);
   font-family: STKaiti, KaiTi, SimSun, serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .preview-name {
-  font-weight: 600;
-  color: #303133;
+  color: #f5f7ff;
+  font-weight: 700;
 }
 
 .preview-author {
   margin-top: 4px;
-  color: #909399;
+  color: #8795b8;
   font-size: 13px;
+}
+
+.form-tip {
+  margin-top: 7px;
+  color: #8795b8;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .full-number {
   width: 100%;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 8px;
+:deep(.el-form-item__label) {
+  color: #cbd6f4;
+  font-weight: 800;
 }
 
-.sticky-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  padding: 16px 0 0;
-  background: #fff;
+:deep(.el-input__wrapper),
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase),
+:deep(.el-select__wrapper) {
+  border: 1px solid #33405f;
+  border-radius: 6px;
+  box-shadow: none;
+  background: #172137;
+  color: #dce5ff;
 }
 
-@media (max-width: 1320px) {
-  .mail-top-grid,
-  .event-workbench {
+:deep(.el-input__inner),
+:deep(.el-select__placeholder),
+:deep(.el-select__selected-item) {
+  color: #dce5ff;
+  font-weight: 700;
+}
+
+:deep(.el-input__inner::placeholder),
+:deep(.el-textarea__inner::placeholder) {
+  color: #63708e;
+}
+
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  color: #9ba8cc;
+  background: #202b44;
+}
+
+:deep(.el-button--primary) {
+  border-color: #6d63f4;
+  background: linear-gradient(135deg, #5669f2, #7b5ff2);
+}
+
+:deep(.el-button:not(.el-button--primary)) {
+  border-color: #33405f;
+  color: #cbd6f4;
+  background: #1b2540;
+}
+
+@media (max-width: 1420px) {
+  .settings-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mail-layout,
+  .template-grid {
     grid-template-columns: 1fr;
   }
 
-  .event-sidebar {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .mail-side {
+    position: static;
   }
 }
 
 @media (max-width: 768px) {
+  .dark-config-page,
   .config-form {
-    padding: 16px;
+    padding: 12px;
   }
 
-  .event-sidebar {
+  .settings-nav,
+  .form-grid,
+  .site-grid,
+  .event-selector-row,
+  .test-row {
     grid-template-columns: 1fr;
   }
 
-  .section-header,
-  .event-editor-head,
-  .test-row {
-    flex-direction: column;
+  .section-heading {
+    flex-wrap: wrap;
   }
 }
 </style>

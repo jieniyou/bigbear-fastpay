@@ -55,39 +55,95 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private static final String DEFAULT_ORDER_NOTIFY_SUBJECT = "【{{site_name}}】新订单通知：{{order_no}}";
     private static final String DEFAULT_ORDER_CONFIRM_NOTIFY_SUBJECT = "【{{site_name}}】订单确认成功：{{order_no}}";
     private static final String DEFAULT_ORDER_CLOSE_NOTIFY_SUBJECT = "【{{site_name}}】订单已关闭：{{order_no}}";
-    private static final String DEFAULT_ORDER_NOTIFY_TEMPLATE = "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;\">"
-            + "<h2 style=\"margin:0 0 8px;\">{{site_name}} 新订单通知</h2>"
-            + "<p style=\"margin:0 0 16px;color:#606266;\">商户 {{merchant_name}} 的店铺 {{shop_name}} 收到一笔待确认订单。</p>"
-            + "<table style=\"border-collapse:collapse;width:100%;font-size:14px;\">"
-            + "<tr><td style=\"width:130px;padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">平台订单号</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{order_no}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">商户订单号</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{out_trade_no}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">商品名称</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{subject}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">订单金额</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">¥{{amount}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">支付类型</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{pay_type_text}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">创建时间</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{create_time}}</td></tr>"
-            + "<tr><td style=\"padding:9px 12px;border:1px solid #ebeef5;background:#f8fafc;color:#606266;\">过期时间</td><td style=\"padding:9px 12px;border:1px solid #ebeef5;\">{{expire_time}}</td></tr>"
-            + "</table><div style=\"margin:22px 0;\">{{action_buttons}}</div>"
-            + "<p style=\"margin:0;color:#909399;font-size:13px;\">确认/关闭按钮为短时效单次操作链接，任意一个按钮使用后同订单其它按钮会失效。</p>"
-            + "<p style=\"margin:12px 0 0;color:#909399;font-size:13px;\">{{author_text}}</p></div>";
-    private static final String DEFAULT_ORDER_CONFIRM_NOTIFY_TEMPLATE = "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;\">"
-            + "<h2 style=\"margin:0 0 8px;\">订单确认成功</h2>"
-            + "<p style=\"margin:0 0 16px;color:#606266;\">商户 {{merchant_name}} 的店铺 {{shop_name}} 订单已确认收款。</p>"
-            + "<p>平台订单号：<b>{{order_no}}</b></p><p>商户订单号：{{out_trade_no}}</p><p>商品名称：{{subject}}</p>"
-            + "<p>确认金额：<b>¥{{pay_amount}}</b></p><p>确认时间：{{pay_time}}</p>"
-            + "<p><a href=\"{{order_url}}\" style=\"display:inline-block;padding:10px 16px;border-radius:4px;background:#409eff;color:#fff;text-decoration:none;\">查看订单</a></p>"
-            + "<p style=\"margin:12px 0 0;color:#909399;font-size:13px;\">{{author_text}}</p></div>";
-    private static final String DEFAULT_ORDER_CLOSE_NOTIFY_TEMPLATE = "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;line-height:1.7;color:#303133;max-width:760px;\">"
-            + "<h2 style=\"margin:0 0 8px;\">订单已关闭</h2>"
-            + "<p style=\"margin:0 0 16px;color:#606266;\">商户 {{merchant_name}} 的店铺 {{shop_name}} 订单已关闭。</p>"
-            + "<p>平台订单号：<b>{{order_no}}</b></p><p>商户订单号：{{out_trade_no}}</p><p>商品名称：{{subject}}</p>"
-            + "<p>订单金额：<b>¥{{amount}}</b></p><p>关闭时间：{{operation_time}}</p>"
-            + "<p><a href=\"{{order_url}}\" style=\"display:inline-block;padding:10px 16px;border-radius:4px;background:#409eff;color:#fff;text-decoration:none;\">查看订单</a></p>"
-            + "<p style=\"margin:12px 0 0;color:#909399;font-size:13px;\">{{author_text}}</p></div>";
+    private static final String DEFAULT_ORDER_NOTIFY_TEMPLATE = buildOrderNoticeTemplate();
+    private static final String DEFAULT_ORDER_CONFIRM_NOTIFY_TEMPLATE = buildOrderConfirmTemplate();
+    private static final String DEFAULT_ORDER_CLOSE_NOTIFY_TEMPLATE = buildOrderCloseTemplate();
 
     private final JdbcTemplate jdbcTemplate;
 
     public SystemConfigServiceImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    /**
+     * 构建统一邮件外壳。
+     *
+     * @param title       邮件标题
+     * @param contentHtml 邮件正文 HTML
+     * @return 完整 HTML 模板
+     */
+    private static String buildMailShell(String title, String contentHtml) {
+        return "<!doctype html><html><body style=\"margin:0;padding:24px;background:#f3f5fa;"
+                + "font-family:Arial,'Microsoft YaHei',sans-serif;color:#252a3a;\">"
+                + "<div style=\"max-width:640px;margin:0 auto;overflow:hidden;border:1px solid #e2e5ef;"
+                + "border-radius:10px;background:#ffffff;box-shadow:0 12px 34px rgba(35,42,72,.10);\">"
+                + "<div style=\"padding:24px 28px;color:#ffffff;background:#5968df;\">"
+                + "<div style=\"font-size:13px;opacity:.82;\">{{site_name}}</div>"
+                + "<h1 style=\"margin:7px 0 0;font-size:24px;line-height:1.35;\">" + title + "</h1></div>"
+                + "<div style=\"padding:28px;font-size:15px;line-height:1.8;\">" + contentHtml + "</div>"
+                + "<div style=\"padding:16px 28px;border-top:1px solid #eceef4;color:#9298a8;background:#fafbfc;font-size:12px;\">"
+                + "此邮件由 {{site_name}} 系统自动发送，请勿直接回复。{{author_text}}</div>"
+                + "</div></body></html>";
+    }
+
+    /**
+     * 构建订单通知默认模板。
+     *
+     * @return 订单通知模板
+     */
+    private static String buildOrderNoticeTemplate() {
+        return buildMailShell("新订单通知",
+                "<p style=\"margin:0 0 18px;\">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 收到一笔待确认订单。</p>"
+                        + "<div style=\"margin:18px 0;padding:18px;border-radius:8px;color:#5968df;background:#f0f2ff;text-align:center;\">"
+                        + "<div style=\"font-size:13px;color:#70778a;\">订单金额</div>"
+                        + "<div style=\"font-size:32px;font-weight:700;letter-spacing:1px;\">¥{{amount}}</div></div>"
+                        + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
+                        + "<tr><td style=\"width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">平台订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\"><b>{{order_no}}</b></td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商户订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{out_trade_no}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商品名称</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{subject}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">支付类型</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{pay_type_text}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">创建时间</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{create_time}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;\">过期时间</td><td style=\"padding:10px 0;\">{{expire_time}}</td></tr></table>"
+                        + "<div style=\"margin:24px 0 8px;\">{{action_buttons}}</div>"
+                        + "<p style=\"margin:14px 0 0;color:#9298a8;font-size:13px;\">确认/关闭按钮为短时效单次操作链接，任意一个按钮使用后同订单其它按钮会失效。</p>");
+    }
+
+    /**
+     * 构建订单确认默认模板。
+     *
+     * @return 订单确认模板
+     */
+    private static String buildOrderConfirmTemplate() {
+        return buildMailShell("订单确认成功",
+                "<p style=\"margin:0 0 18px;\">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 订单已确认收款。</p>"
+                        + "<div style=\"margin:18px 0;padding:18px;border-radius:8px;color:#1b9468;background:#eaf8f1;text-align:center;\">"
+                        + "<div style=\"font-size:13px;color:#60776c;\">确认金额</div>"
+                        + "<div style=\"font-size:32px;font-weight:700;letter-spacing:1px;\">¥{{pay_amount}}</div></div>"
+                        + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
+                        + "<tr><td style=\"width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">平台订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\"><b>{{order_no}}</b></td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商户订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{out_trade_no}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商品名称</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{subject}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;\">确认时间</td><td style=\"padding:10px 0;\">{{pay_time}}</td></tr></table>"
+                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;\">查看订单</a></p>");
+    }
+
+    /**
+     * 构建订单关闭默认模板。
+     *
+     * @return 订单关闭模板
+     */
+    private static String buildOrderCloseTemplate() {
+        return buildMailShell("订单已关闭",
+                "<p style=\"margin:0 0 18px;\">商户 <b>{{merchant_name}}</b> 的店铺 <b>{{shop_name}}</b> 订单已关闭。</p>"
+                        + "<div style=\"margin:18px 0;padding:18px;border-radius:8px;color:#d95050;background:#fff0f0;text-align:center;\">"
+                        + "<div style=\"font-size:13px;color:#8f6a6a;\">订单金额</div>"
+                        + "<div style=\"font-size:32px;font-weight:700;letter-spacing:1px;\">¥{{amount}}</div></div>"
+                        + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
+                        + "<tr><td style=\"width:128px;padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">平台订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\"><b>{{order_no}}</b></td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商户订单号</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{out_trade_no}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;border-bottom:1px solid #eceef4;\">商品名称</td><td style=\"padding:10px 0;border-bottom:1px solid #eceef4;\">{{subject}}</td></tr>"
+                        + "<tr><td style=\"padding:10px 0;color:#70778a;\">关闭时间</td><td style=\"padding:10px 0;\">{{operation_time}}</td></tr></table>"
+                        + "<p style=\"margin:24px 0 0;\"><a href=\"{{order_url}}\" style=\"display:inline-block;padding:11px 18px;border-radius:6px;color:#ffffff;background:#5968df;text-decoration:none;font-weight:700;\">查看订单</a></p>");
     }
 
     /**
