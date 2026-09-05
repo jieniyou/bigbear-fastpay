@@ -16,6 +16,7 @@ import com.fastpay.mapper.PayOrderMapper;
 import com.fastpay.mapper.PayQrcodeMapper;
 import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.MerchantService;
+import com.fastpay.util.CallbackUrlUtil;
 import com.fastpay.util.JwtUtil;
 import com.fastpay.util.PasswordUtil;
 import com.fastpay.util.SignUtil;
@@ -121,8 +122,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         merchant.setContactEmail(dto.getContactEmail());
         merchant.setApiKey(SignUtil.generateApiKey());
         merchant.setApiSecret(SignUtil.generateApiSecret());
-        merchant.setNotifyUrl(dto.getNotifyUrl());
-        merchant.setReturnUrl(dto.getReturnUrl());
+        merchant.setNotifyUrl(CallbackUrlUtil.ensureMaxLength(dto.getNotifyUrl(), "支付成功回调地址"));
+        merchant.setReturnUrl(CallbackUrlUtil.ensureMaxLength(dto.getReturnUrl(), "支付成功跳转地址"));
         merchant.setTotalAmount(BigDecimal.ZERO);
         merchant.setTotalCount(0);
         merchant.setStatus(Constants.Status.ENABLED);
@@ -166,8 +167,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             merchant.setContactPhone(dto.getContactPhone());
         }
         merchant.setContactEmail(dto.getContactEmail());
-        merchant.setNotifyUrl(dto.getNotifyUrl());
-        merchant.setReturnUrl(dto.getReturnUrl());
+        merchant.setNotifyUrl(CallbackUrlUtil.ensureMaxLength(dto.getNotifyUrl(), "支付成功回调地址"));
+        merchant.setReturnUrl(CallbackUrlUtil.ensureMaxLength(dto.getReturnUrl(), "支付成功跳转地址"));
         merchant.setRemark(dto.getRemark());
 
         this.updateById(merchant);
@@ -275,8 +276,8 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
             throw new BusinessException("商户不存在");
         }
 
-        merchant.setNotifyUrl(notifyUrl);
-        merchant.setReturnUrl(returnUrl);
+        merchant.setNotifyUrl(CallbackUrlUtil.ensureMaxLength(notifyUrl, "支付成功回调地址"));
+        merchant.setReturnUrl(CallbackUrlUtil.ensureMaxLength(returnUrl, "支付成功跳转地址"));
         this.updateById(merchant);
     }
 }

@@ -3,6 +3,7 @@ package com.fastpay.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -78,10 +79,12 @@ public class CreateOrderDTO {
     /**
      * 支付成功后跳转地址
      */
+    @Size(max = 2048, message = "支付成功跳转地址不能超过2048个字符")
     private String returnUrl;
 
     /**
      * 支付成功后异步通知地址
      */
+    @Size(max = 2048, message = "异步通知地址不能超过2048个字符")
     private String notifyUrl;
 }

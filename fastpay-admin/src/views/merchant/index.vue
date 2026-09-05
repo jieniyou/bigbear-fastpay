@@ -118,10 +118,10 @@
           <el-input v-model="formData.contactEmail" placeholder="请输入联系邮箱" />
         </el-form-item>
         <el-form-item label="回调地址" prop="notifyUrl">
-          <el-input v-model="formData.notifyUrl" placeholder="支付成功回调通知地址" />
+          <el-input v-model="formData.notifyUrl" placeholder="支付成功回调通知地址" maxlength="2048" show-word-limit />
         </el-form-item>
         <el-form-item label="跳转地址" prop="returnUrl">
-          <el-input v-model="formData.returnUrl" placeholder="支付成功跳转地址" />
+          <el-input v-model="formData.returnUrl" placeholder="支付成功跳转地址" maxlength="2048" show-word-limit />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="formData.remark" type="textarea" :rows="3" placeholder="请输入备注" />

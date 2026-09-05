@@ -2,6 +2,7 @@ package com.fastpay.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -56,11 +57,13 @@ public class MerchantDTO {
     /**
      * 支付成功回调地址
      */
+    @Size(max = 2048, message = "支付成功回调地址不能超过2048个字符")
     private String notifyUrl;
 
     /**
      * 支付成功跳转地址
      */
+    @Size(max = 2048, message = "支付成功跳转地址不能超过2048个字符")
     private String returnUrl;
 
     /**

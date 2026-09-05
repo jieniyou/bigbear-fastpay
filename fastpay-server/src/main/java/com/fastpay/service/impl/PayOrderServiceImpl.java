@@ -18,6 +18,7 @@ import com.fastpay.mapper.ShopMapper;
 import com.fastpay.service.OrderMailService;
 import com.fastpay.service.PayOrderService;
 import com.fastpay.service.PayQrcodeService;
+import com.fastpay.util.CallbackUrlUtil;
 import com.fastpay.util.SignUtil;
 import com.fastpay.vo.PayResultVO;
 import lombok.extern.slf4j.Slf4j;
@@ -145,8 +146,12 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
         order.setAmount(dto.getAmount());
         order.setSubject(dto.getSubject());
         order.setStatus(Constants.OrderStatus.UNPAID);
-        order.setNotifyUrl(StringUtils.hasText(dto.getNotifyUrl()) ? dto.getNotifyUrl() : merchant.getNotifyUrl());
-        order.setReturnUrl(StringUtils.hasText(dto.getReturnUrl()) ? dto.getReturnUrl() : merchant.getReturnUrl());
+        order.setNotifyUrl(CallbackUrlUtil.ensureMaxLength(
+                StringUtils.hasText(dto.getNotifyUrl()) ? dto.getNotifyUrl() : merchant.getNotifyUrl(),
+                "异步通知地址"));
+        order.setReturnUrl(CallbackUrlUtil.ensureMaxLength(
+                StringUtils.hasText(dto.getReturnUrl()) ? dto.getReturnUrl() : merchant.getReturnUrl(),
+                "支付成功跳转地址"));
         order.setNotifyStatus(0);
         order.setNotifyCount(0);
         order.setExpireTime(LocalDateTime.now().plusMinutes(orderTimeoutMinutes));
@@ -565,7 +570,7 @@ public class PayOrderServiceImpl extends ServiceImpl<PayOrderMapper, PayOrder> i
     public void updateReturnUrl(String orderNo, String returnUrl) {
         PayOrder order = this.queryOrder(orderNo);
         if (order != null) {
-            order.setReturnUrl(returnUrl);
+            order.setReturnUrl(CallbackUrlUtil.ensureMaxLength(returnUrl, "支付成功跳转地址"));
             this.updateById(order);
             log.info("更新订单returnUrl: orderNo={}, returnUrl={}", orderNo, returnUrl);
         }
